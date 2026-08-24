@@ -5,8 +5,49 @@ import puppeteer, { Browser, Page } from "puppeteer-core";
 import { PDFDocument } from "pdf-lib";
 
 const OUTPUT_DIR = path.resolve("output");
+const FONTS_DIR = path.resolve("fonts");
 const JOURNAL_WIDTH = 1080;
 const FIXED_PAGE_HEIGHT = 1920;
+const MAX_PAGE_HEIGHT = 6000;
+const CARD_WIDTH = 302.78;
+const GRID_GAP = 16;
+const THREE_CARDS_WIDTH = 3 * CARD_WIDTH + 2 * GRID_GAP;
+
+const fontBase64Cache = new Map<string, string>();
+
+function getFontMimeType(fileName: string): string {
+  const ext = path.extname(fileName).toLowerCase();
+  if (ext === ".otf") return "font/otf";
+  if (ext === ".woff") return "font/woff";
+  if (ext === ".woff2") return "font/woff2";
+  return "font/truetype";
+}
+
+function embedFontsAsBase64(html: string): string {
+  return html.replace(
+    /url\((['"]?)(?:\.\.\/|\/)*fonts\/([^'")]+)\1\)/g,
+    (match, quote, rawFileName) => {
+      const fileName = decodeURIComponent(rawFileName);
+
+      try {
+        let base64 = fontBase64Cache.get(fileName);
+
+        if (!base64) {
+          const filePath = path.join(FONTS_DIR, fileName);
+          const fileBuffer = fs.readFileSync(filePath);
+          base64 = fileBuffer.toString("base64");
+          fontBase64Cache.set(fileName, base64);
+        }
+
+        const mimeType = getFontMimeType(fileName);
+        return `url("data:${mimeType};base64,${base64}")`;
+      } catch (error) {
+        console.error(`[JournalHandler] Falha ao embutir fonte "${fileName}":`, error);
+        return match;
+      }
+    }
+  );
+}
 
 type JournalPagePayload = {
   type: "cover" | "category" | "ad" | string;
@@ -62,10 +103,13 @@ async function launchBrowser(): Promise<Browser> {
   return puppeteer.launch({
     executablePath,
     headless: true,
+    timeout: 180000,
+    protocolTimeout: 180000,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
+      "--font-render-hinting=none",
       "--disable-gpu",
       "--disable-extensions",
       "--disable-background-networking",
@@ -88,18 +132,18 @@ function buildPageHtml(pageHtml: string, baseUrl: string) {
   <base href="${safeBaseUrl}" />
   <style>
     @font-face {
-      font-family: 'Inter';
-      src: url('/fonts/Inter-Regular.ttf') format('truetype');
+      font-family: 'Segoe UI';
+      src: url('/fonts/Segoe UI.ttf') format('truetype');
       font-weight: 400;
     }
     @font-face {
-      font-family: 'Inter';
-      src: url('/fonts/Inter-Bold.ttf') format('truetype');
+      font-family: 'Segoe UI';
+      src: url('/fonts/Segoe UI Bold.ttf') format('truetype');
       font-weight: 700;
     }
     @font-face {
-      font-family: 'Inter';
-      src: url('/fonts/Inter-Black.ttf') format('truetype');
+      font-family: 'Segoe UI';
+      src: url('/fonts/segoe-ui-black.ttf') format('truetype');
       font-weight: 900;
     }
 
@@ -111,7 +155,7 @@ function buildPageHtml(pageHtml: string, baseUrl: string) {
       padding: 0 !important;
       overflow: hidden !important;
       background: #ffffff !important;
-      font-family: Inter, Arial, sans-serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
       color: #111111;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
@@ -154,7 +198,6 @@ function buildPageHtml(pageHtml: string, baseUrl: string) {
       max-width: ${JOURNAL_WIDTH}px !important;
       height: auto !important;
       min-height: 0 !important;
-      max-height: ${FIXED_PAGE_HEIGHT}px !important;
       margin: 0 !important;
       overflow: hidden !important;
       box-shadow: none !important;
@@ -162,9 +205,45 @@ function buildPageHtml(pageHtml: string, baseUrl: string) {
       page-break-after: auto !important;
     }
 
+    .journal-root,
+    .journal-page,
+    .journal-category-page,
+    [data-journal-page] {
+      width: ${JOURNAL_WIDTH}px !important;
+      min-width: ${JOURNAL_WIDTH}px !important;
+      max-width: ${JOURNAL_WIDTH}px !important;
+    }
+
     .journal-card-wrap {
       overflow: hidden !important;
       flex-shrink: 0 !important;
+    }
+
+    .journal-category-bar {
+      position: relative !important;
+      left: 0 !important;
+      right: 0 !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      box-sizing: border-box !important;
+    }
+
+    .journal-grid {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+      gap: 16px !important;
+      padding: 20px 40px 36px 40px !important;
+      box-sizing: border-box !important;
+      align-items: flex-start !important;
+      align-content: flex-start !important;
+      width: ${JOURNAL_WIDTH}px !important;
+    }
+
+    .journal-grid::after {
+      content: '' !important;
+      flex: 1 1 ${THREE_CARDS_WIDTH}px !important;
+      visibility: hidden !important;
     }
 
     .journal-card-shadow-host {
@@ -184,50 +263,47 @@ function buildPageHtml(pageHtml: string, baseUrl: string) {
 }
 
 async function waitForPageReady(page: Page) {
-  await page.evaluate(async () => {
-    try {
+  try {
+    // Aguarda que as fontes estejam carregadas (já embutidas em base64).
+    await page.evaluate(async () => {
       // @ts-ignore
-      if (document.fonts?.ready) await document.fonts.ready;
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+    });
+  } catch (error) {
+    // Fontes já embutidas; ignorar falhas silenciosamente.
+  }
 
-      const images = Array.from(document.images);
-
-      await Promise.all(
-        images.map((img) => {
-          if (img.complete) return Promise.resolve();
-
-          return new Promise<void>((resolve) => {
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-            setTimeout(resolve, 5000);
-          });
-        })
-      );
-
-      await new Promise((resolve) => setTimeout(resolve, 400));
-    } catch (error) {
-      console.error("[JournalHandler][waitForPageReady]", error);
-    }
-  });
+  // Pausa curta para garantir que o CSS grid tenha calculado o layout.
+  await new Promise((resolve) => setTimeout(resolve, 300));
 }
-
-
 
 async function getPdfPageHeight(page: Page, pageType: string) {
   if (pageType === "cover" || pageType === "ad") {
     return FIXED_PAGE_HEIGHT;
   }
 
+  // Medir a altura real do elemento renderizado no navegador.
   const measuredHeight = await page.evaluate(() => {
-    const pageElement = document.querySelector("[data-journal-page]") as HTMLElement | null;
+    const pageElement =
+      document.querySelector('[data-journal-page="category"]') ||
+      document.querySelector(".journal-category-page") ||
+      document.querySelector("[data-journal-page]");
 
     if (pageElement) {
-      const rect = pageElement.getBoundingClientRect();
-      return Math.ceil(Math.max(pageElement.scrollHeight, pageElement.offsetHeight, rect.height));
+      return Math.ceil(
+        Math.max(
+          pageElement.scrollHeight,
+          (pageElement as HTMLElement).offsetHeight,
+          pageElement.getBoundingClientRect().height
+        )
+      );
     }
 
+    // Fallback: usar o body.
     const body = document.body;
     const html = document.documentElement;
-
     return Math.ceil(
       Math.max(
         body.scrollHeight,
@@ -238,7 +314,10 @@ async function getPdfPageHeight(page: Page, pageType: string) {
     );
   });
 
-  return Math.min(Math.max(measuredHeight || 1, 1), FIXED_PAGE_HEIGHT);
+  // Altura mínima igual à capa para uniformidade visual.
+  const finalHeight = Math.max(FIXED_PAGE_HEIGHT, measuredHeight);
+
+  return Math.min(Math.ceil(finalHeight), MAX_PAGE_HEIGHT);
 }
 
 async function renderSinglePagePdf(
@@ -261,31 +340,42 @@ async function renderSinglePagePdf(
       console.error(`[JournalHandler][pageerror][${journalPage.type}]`, error);
     });
 
+    // Escreve o HTML em arquivo temporário e carrega via file:// para evitar
+    // timeout de setContent em payload grande (base64 de imagens, shadow DOM, etc.).
+    const tempHtmlFile = outputPath.replace(/\.pdf$/, ".html");
+    fs.writeFileSync(
+      tempHtmlFile,
+      embedFontsAsBase64(buildPageHtml(journalPage.html, baseUrl)),
+      "utf-8"
+    );
+
     await page.setViewport({
       width: JOURNAL_WIDTH,
       height: FIXED_PAGE_HEIGHT,
       deviceScaleFactor: 1,
     });
 
-    await page.setContent(buildPageHtml(journalPage.html, baseUrl), {
-      waitUntil: "networkidle0",
-      timeout: 90000,
+    await page.goto(`file://${tempHtmlFile}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 120000,
     });
 
     await waitForPageReady(page);
 
-    const finalHeight = await getPdfPageHeight(page, journalPage.type);
+    // Garante valores inteiros para evitar erro int32 do protocolo.
+    const safeWidth = Math.ceil(JOURNAL_WIDTH);
+    const safeHeight = Math.ceil(await getPdfPageHeight(page, journalPage.type));
 
     await page.setViewport({
-      width: JOURNAL_WIDTH,
-      height: finalHeight,
+      width: safeWidth,
+      height: safeHeight,
       deviceScaleFactor: 1,
     });
 
     await page.pdf({
       path: outputPath,
-      width: `${JOURNAL_WIDTH}px`,
-      height: `${finalHeight}px`,
+      width: `${safeWidth}px`,
+      height: `${safeHeight}px`,
       printBackground: true,
       preferCSSPageSize: false,
       margin: {
@@ -294,8 +384,14 @@ async function renderSinglePagePdf(
         bottom: "0px",
         left: "0px",
       },
-      timeout: 120000,
+      timeout: 180000,
     });
+
+    try {
+      fs.unlinkSync(tempHtmlFile);
+    } catch (err) {
+      console.error("[JournalHandler] Erro ao remover arquivo temporário:", err);
+    }
   } finally {
     await page.close().catch(() => {});
   }
@@ -307,7 +403,10 @@ async function mergePdfFiles(pdfPaths: string[], finalPdfPath: string) {
   for (const pdfPath of pdfPaths) {
     const bytes = fs.readFileSync(pdfPath);
     const sourcePdf = await PDFDocument.load(bytes);
-    const copiedPages = await finalPdf.copyPages(sourcePdf, sourcePdf.getPageIndices());
+    const copiedPages = await finalPdf.copyPages(
+      sourcePdf,
+      sourcePdf.getPageIndices()
+    );
 
     copiedPages.forEach((copiedPage) => {
       finalPdf.addPage(copiedPage);
@@ -331,7 +430,9 @@ export function setupJournalRoute(app: Express) {
 
       const legacyHtml = String(req.body?.html || "");
       const jobId = String(req.body?.jobId || `journal_${Date.now()}`);
-      const requestedFileName = String(req.body?.fileName || "jornal-diagramado.pdf");
+      const requestedFileName = String(
+        req.body?.fileName || "jornal-diagramado.pdf"
+      );
 
       const normalizedPages: JournalPagePayload[] = pages.length
         ? pages
@@ -365,9 +466,15 @@ export function setupJournalRoute(app: Express) {
 
       browser = await launchBrowser();
 
-      const protocol = req.protocol || "http";
-      const host = req.get("host") || `localhost:${process.env.PORT || "3000"}`;
-      const baseUrl = `${protocol}://${host}`;
+      // O Puppeteer roda no mesmo container do servidor Express: usar o
+      // endereço local (loopback) evita depender de o container conseguir
+      // acessar sua própria URL pública pela internet (comum falhar em
+      // serviços como Railway/Render, causando fontes e imagens que não
+      // carregam silenciosamente no PDF). Usa a porta real em que o
+      // servidor está escutando (pode diferir de process.env.PORT se essa
+      // porta estava ocupada e o servidor precisou usar outra).
+      const actualPort = req.app.locals.actualPort || process.env.PORT || "3000";
+      const baseUrl = `http://127.0.0.1:${actualPort}`;
 
       const tempPdfPaths: string[] = [];
 
