@@ -211,72 +211,10 @@ export class CardGenerator extends EventEmitter {
   }
 
   private validateRows(rows: any[]): void {
-        );
-      }
+    const headers = Object.keys(rows[0] ?? {}).map((h) =>
+      h.toLowerCase().trim()
+    );
 
-      if (!complemento) {
-        throw new Error(
-          `Linha ${line}: template SOMA exige o campo COMPLEMENTO.`
-        );
-      }
-
-      return;
-    }
-
-    // LOGO obrigatório
-    if (!logo) {
-      throw new Error(
-        `Linha ${line}: campo LOGO não pode ficar vazio.`
-      );
-    }
-
-    // CUPOM
-    if (tipo === "cupom") {
-      if (!cupom) {
-        throw new Error(
-          `Linha ${line}: template CUPOM exige o campo CUPOM preenchido.`
-        );
-      }
-    }
-
-    // PROMOCAO
-    if (tipo === "promocao") {
-      if (!valor) {
-        throw new Error(
-          `Linha ${line}: template PROMOCAO exige o campo VALOR.`
-        );
-      }
-
-      return;
-    }
-
-    // QUEDA / BC / CASHBACK
-    if (["queda", "bc", "cashback"].includes(tipo)) {
-      if (!valor) {
-        throw new Error(
-          `Linha ${line}: template ${tipo.toUpperCase()} exige o campo VALOR.`
-        );
-      }
-
-      const normalizedValue = valor
-        .replace(/%/g, "")
-        .replace(/\./g, ",")
-        .trim();
-
-      const numericValidation = normalizedValue.replace(/,/g, ".");
-
-      if (isNaN(Number(numericValidation))) {
-        throw new Error(
-          `Linha ${line}: template ${tipo.toUpperCase()} aceita apenas números no VALOR.`
-        );
-      }
-
-      row.valor = normalizedValue;
-    }
-  });
-}
-
-    const headers = Object.keys(rows[0] ?? {}).map((h) => h.toLowerCase().trim());
     const missing = ["tipo"].filter((h) => !headers.includes(h));
 
     if (missing.length) {
@@ -287,27 +225,71 @@ export class CardGenerator extends EventEmitter {
 
     rows.forEach((row, index) => {
       const line = index + 2;
-      const tipo = this.normalizeType(row.tipo);
+      const tipoOriginal = String(row.tipo ?? "").trim();
+      const tipo = this.normalizeType(tipoOriginal);
+      const logo = String(row.logo ?? "").trim();
+      const valor = String(row.valor ?? "").trim();
+      const cupom = String(row.cupom ?? "").trim();
+      const complemento = String(row.complemento ?? "").trim();
 
-      if (!String(row.tipo ?? "").trim()) {
+      if (!tipoOriginal) {
         throw new Error(`Erro na linha ${line}: a coluna "tipo" está vazia.`);
       }
 
-      if (!tipo || !VALID_TYPES.includes(tipo)) { 
-        throw new Error( 
-           `Erro na linha ${line}: tipo "${row.tipo}" não reconhecido. Use promocao, cupom, cashback, queda, bc, soma ou nada.` 
-        ); 
-      }
-      
-
-      if (tipo === "cupom" && !String(row.cupom ?? "").trim()) {
+      if (!tipo || !VALID_TYPES.includes(tipo)) {
         throw new Error(
-          `Erro na linha ${line}: template cupom exige a coluna "cupom" preenchida.`
+          `Erro na linha ${line}: tipo "${row.tipo}" não reconhecido. Use promocao, cupom, cashback, queda, bc, soma ou nada.`
         );
       }
 
-      if (!String(row.valor ?? "").trim()) {
-        throw new Error(`Erro na linha ${line}: a coluna "valor" está vazia.`);
+      // LOGO obrigatório
+      if (!logo) {
+        throw new Error(`Linha ${line}: campo LOGO não pode ficar vazio.`);
+      }
+
+      // SOMA
+      if (tipo === "soma" && !complemento) {
+        throw new Error(
+          `Linha ${line}: template SOMA exige o campo COMPLEMENTO.`
+        );
+      }
+
+      // CUPOM
+      if (tipo === "cupom" && !cupom) {
+        throw new Error(
+          `Linha ${line}: template CUPOM exige o campo CUPOM preenchido.`
+        );
+      }
+
+      // PROMOÇÃO
+      if (tipo === "promocao" && !valor) {
+        throw new Error(
+          `Linha ${line}: template PROMOCAO exige o campo VALOR.`
+        );
+      }
+
+      // QUEDA / BC / CASHBACK
+      if (["queda", "bc", "cashback"].includes(tipo)) {
+        if (!valor) {
+          throw new Error(
+            `Linha ${line}: template ${tipo.toUpperCase()} exige o campo VALOR.`
+          );
+        }
+
+        const normalizedValue = valor
+          .replace(/%/g, "")
+          .replace(/\./g, ",")
+          .trim();
+
+        const numericValidation = normalizedValue.replace(/,/g, ".");
+
+        if (isNaN(Number(numericValidation))) {
+          throw new Error(
+            `Linha ${line}: template ${tipo.toUpperCase()} aceita apenas números no VALOR.`
+          );
+        }
+
+        row.valor = normalizedValue;
       }
     });
   }
