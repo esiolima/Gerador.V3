@@ -218,16 +218,22 @@ body {
 
 /* TEXTO DO CUPOM */
 #cupom-text {
-  display: block;
+  display: inline-block;
+  width: auto;
   max-width: 100%;
-  font-weight: 900;
-  color: #ffffff;
-  font-size: 72px;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
   line-height: 1;
+  color: #ffffff;
   text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  box-sizing: border-box;
 }
-
 /* ===== RODAPÉ ===== */
 .rodape {
   margin-bottom: 35px;
@@ -303,12 +309,23 @@ window.addEventListener("load", function () {
 
     if (el && el.parentElement) {
       const container = el.parentElement;
-      let fontSize = 72;
-      const min = 20;
+
+      let fontSize = 28;
+      const minFontSize = 12;
+
+      const styles = window.getComputedStyle(container);
+      const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+      const paddingRight = parseFloat(styles.paddingRight) || 0;
+
+      const availableWidth =
+        container.clientWidth - paddingLeft - paddingRight;
 
       el.style.fontSize = fontSize + "px";
 
-      while (el.scrollWidth > container.clientWidth && fontSize > min) {
+      while (
+        el.scrollWidth > availableWidth &&
+        fontSize > minFontSize
+      ) {
         fontSize -= 1;
         el.style.fontSize = fontSize + "px";
       }
