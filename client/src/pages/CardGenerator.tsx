@@ -1718,12 +1718,12 @@ const journalCss = `
 
   .journal-category-bar{
     width:calc(100% - 72px);
-    min-height:216px;
+    min-height:156px;
     margin:38px auto 24px auto;
     background:#0f6bc8;
     color:white;
     display:grid;
-    grid-template-columns:200px minmax(0, 1fr) 100px;
+    grid-template-columns:140px minmax(0, 1fr) 100px;
     align-items:center;
     justify-content:center;
     gap:18px;
@@ -1747,7 +1747,7 @@ const journalCss = `
   }
 
   .journal-category-bar-image-slot{
-    width:200px;
+    width:140px;
     height:100px;
     border:0;
     border-radius:0;
