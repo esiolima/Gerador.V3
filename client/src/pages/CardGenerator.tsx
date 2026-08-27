@@ -1003,7 +1003,7 @@ export default function CardGenerator() {
 
             <div className="mt-5 border-t border-white/10 pt-4 text-center">
               <p className="text-xs font-medium tracking-wide text-white/35">
-                Desenvolvido por Esio Lima • Versão 4.0
+                Desenvolvido por Esio Lima • Versão 5.0
               </p>
             </div>
           </div>
