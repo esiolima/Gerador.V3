@@ -314,10 +314,8 @@ async function getPdfPageHeight(page: Page, pageType: string) {
     );
   });
 
-  // Altura mínima igual à capa para uniformidade visual.
-  const finalHeight = Math.max(FIXED_PAGE_HEIGHT, measuredHeight);
-
-  return Math.min(Math.ceil(finalHeight), MAX_PAGE_HEIGHT);
+  // Usa a altura real do conteúdo, sem altura mínima ou máxima fixa.
+  return Math.max(1, Math.ceil(measuredHeight));
 }
 
 async function renderSinglePagePdf(
