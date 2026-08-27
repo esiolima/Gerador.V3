@@ -10,13 +10,11 @@
   src: url('../fonts/Inter-Regular.ttf') format('truetype');
   font-weight: 400;
 }
-
 @font-face {
   font-family: 'Inter';
   src: url('../fonts/Inter-Bold.ttf') format('truetype');
   font-weight: 700;
 }
-
 @font-face {
   font-family: 'Inter';
   src: url('../fonts/Inter-Black.ttf') format('truetype');
@@ -53,7 +51,6 @@ body {
 }
 
 /* ===== SELO ===== */
-
 .selo {
   position: absolute;
   top: 10px;
@@ -76,7 +73,6 @@ body {
 }
 
 /* ===== LOGO ===== */
-
 .logo {
   margin-top: 45px;
   height: 114px;
@@ -100,7 +96,6 @@ body {
 }
 
 /* ===== TARJA ===== */
-
 .tarja {
   background: #16A7E0;
   color: #ffffff;
@@ -115,7 +110,6 @@ body {
 }
 
 /* ===== TEXTO ===== */
-
 .condicao {
   margin-top: 0;
   margin-bottom: 15px;
@@ -130,20 +124,19 @@ body {
 }
 
 /* ===== BENEFÍCIO ===== */
-
 .percentual {
   display: flex;
   align-items: flex-end;
   justify-content: center;
   width: 100%;
-  max-width: 500px;
+  max-width: 500px; /* 🔥 LIMITADOR PARA IGUALAR COM OS OUTROS */
   margin-top: 10px;
 }
 
 .numero,
 .percent {
   font-weight: 900;
-  font-size: clamp(120px, 22vw, 240px);
+  font-size: clamp(120px, 22vw, 240px); /* 🔥 AJUSTADO */
   line-height: 0.85;
 }
 
@@ -158,7 +151,6 @@ body {
 }
 
 /* ===== FLEX ===== */
-
 .espaco-flexivel {
   margin-top: 15px;
   margin-bottom: 15px;
@@ -181,7 +173,6 @@ body {
 }
 
 /* ===== CUPOM BOX ===== */
-
 .cupom-box {
   margin-top: 10px;
   margin-bottom: 20px;
@@ -191,15 +182,12 @@ body {
   border-radius: 16px;
   display: flex;
   overflow: hidden;
-  box-sizing: border-box;
 }
 
 /* LADO ESQUERDO */
-
 .cupom-label {
   width: 80px;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0,0,0,0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -215,8 +203,7 @@ body {
   letter-spacing: 2px;
 }
 
-/* ÁREA DO CÓDIGO */
-
+/* CÓDIGO */
 .cupom-codigo {
   flex: 1 1 auto;
   width: calc(100% - 80px);
@@ -232,26 +219,19 @@ body {
 }
 
 /* TEXTO DO CUPOM */
-
 #cupom-text {
   display: block;
   width: 100%;
   max-width: 100%;
   margin: 0;
   padding: 0;
-  font-weight: 900;
-  color: #ffffff;
-  font-size: 72px;
-  line-height: 1;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: clip;
   box-sizing: border-box;
 }
 
 /* ===== RODAPÉ ===== */
-
 .rodape {
   margin-bottom: 35px;
   text-align: center;
@@ -274,11 +254,11 @@ body {
 <div class="card">
 
   <div class="selo">
-    [image removed]
+    <img src="{{SELO}}" alt="Selo">
   </div>
 
   <div class="logo">
-    [image removed]
+    <img src="{{LOGO}}" alt="Logo">
   </div>
 
   <div class="tarja">
@@ -292,9 +272,7 @@ body {
     <div class="percent">%</div>
   </div>
 
-  <div class="desconto">
-    DE DESCONTO
-  </div>
+  <div class="desconto">DE DESCONTO</div>
 
   <div class="espaco-flexivel">
     <div class="complemento">{{COMPLEMENTO}}</div>
@@ -333,16 +311,7 @@ window.addEventListener("load", function () {
 
       el.style.fontSize = fontSize + "px";
 
-      const styles = window.getComputedStyle(container);
-      const paddingLeft = parseFloat(styles.paddingLeft) || 0;
-      const paddingRight = parseFloat(styles.paddingRight) || 0;
-      const availableWidth =
-        container.clientWidth - paddingLeft - paddingRight;
-
-      while (
-        el.scrollWidth > availableWidth &&
-        fontSize > min
-      ) {
+      while (el.scrollWidth > container.clientWidth && fontSize > min) {
         fontSize -= 1;
         el.style.fontSize = fontSize + "px";
       }
