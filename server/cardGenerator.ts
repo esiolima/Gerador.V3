@@ -4,6 +4,7 @@ import puppeteer, { Browser, Page } from "puppeteer-core";
 import archiver from "archiver";
 import xlsx from "xlsx";
 import { EventEmitter } from "events";
+import { stripInterFontFace } from "./fontUtils";
 
 const BASE_DIR = path.resolve();
 const OUTPUT_DIR = path.join(BASE_DIR, "output");
@@ -694,7 +695,7 @@ export class CardGenerator extends EventEmitter {
             detail: "Aplicando o HTML final do card no Chromium.",
           });
 
-          await page.setContent(html, {
+          await page.setContent(stripInterFontFace(html), {
             waitUntil: "load",
             timeout: 60000,
           });
