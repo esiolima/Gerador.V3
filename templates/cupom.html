@@ -104,12 +104,16 @@ body {
   text-align: center;
   padding: 18px 40px;
   border-radius: 999px;
-  margin-top: 10px;
+  margin-top: 22px;
   margin-bottom: 20px;
   white-space: nowrap;
 }
 
 /* ===== TEXTO ===== */
+.fit-text-inner {
+  display: block;
+}
+
 .condicao {
   margin-top: 0;
   margin-bottom: 0;
@@ -271,7 +275,7 @@ body {
     CUPOM DE DESCONTO
   </div>
 
-  <div class="condicao">{{TEXTO}}</div>
+  <div class="condicao"><span class="fit-text-inner">{{TEXTO}}</span></div>
 
   <div class="percentual">
     <div class="numero">{{VALOR}}</div>
@@ -280,9 +284,9 @@ body {
 
   <div class="desconto">DE DESCONTO</div>
 
-  <div class="complemento">{{COMPLEMENTO}}</div>
+  <div class="complemento"><span class="fit-text-inner">{{COMPLEMENTO}}</span></div>
 
-  <div class="legal">{{LEGAL}}</div>
+  <div class="legal"><span class="fit-text-inner">{{LEGAL}}</span></div>
 
   <div class="cupom-box">
     <div class="cupom-label">
@@ -307,6 +311,29 @@ body {
 <script>
 window.addEventListener("load", function () {
   try {
+    // Encolhe a fonte de um bloco de texto ate ele caber dentro da propria
+    // altura (evita que texto mais longo que o esperado invada o elemento
+    // vizinho, ja que estes blocos sao elasticos mas tem um minimo fixo).
+    // Mede o elemento INTERNO (span), nao o container flex — scrollHeight
+    // de um container flex com texto solto (sem elemento proprio) nao
+    // reflete o overflow real quando o conteudo estoura a altura.
+    function fitBoxHeight(container, minFontPx) {
+      if (!container) return;
+      const inner = container.querySelector(".fit-text-inner") || container;
+
+      let fontSize = parseFloat(getComputedStyle(container).fontSize);
+      const min = minFontPx;
+
+      while (inner.scrollHeight > container.clientHeight + 1 && fontSize > min) {
+        fontSize -= 1;
+        container.style.fontSize = fontSize + "px";
+      }
+    }
+
+    fitBoxHeight(document.querySelector(".condicao"), 16);
+    fitBoxHeight(document.querySelector(".complemento"), 14);
+    fitBoxHeight(document.querySelector(".legal"), 12);
+
     const el = document.getElementById("cupom-text");
 
     if (el && el.parentElement) {

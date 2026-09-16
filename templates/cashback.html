@@ -137,6 +137,10 @@ body {
   gap: 0;
 }
 
+.fit-text-inner {
+  display: block;
+}
+
 .texto-topo {
   flex: 1 1 90px;
   min-height: 90px;
@@ -248,7 +252,7 @@ body {
   <div class="area-central">
 
     <div class="texto-topo">
-      {{TEXTO}}
+      <span class="fit-text-inner">{{TEXTO}}</span>
     </div>
 
     <div class="valor-container">
@@ -262,11 +266,11 @@ body {
     </div>
 
     <div class="complemento">
-      {{COMPLEMENTO}}
+      <span class="fit-text-inner">{{COMPLEMENTO}}</span>
     </div>
 
     <div class="legal">
-      {{LEGAL}}
+      <span class="fit-text-inner">{{LEGAL}}</span>
     </div>
 
   </div>
@@ -284,6 +288,26 @@ body {
 
 <script>
 window.addEventListener("load", function () {
+
+  // Encolhe a fonte de um bloco de texto ate ele caber dentro da propria
+  // altura (evita que texto mais longo que o esperado invada o elemento
+  // vizinho). Mede o wrapper interno (span), nao o container flex.
+  function fitBoxHeight(container, minFontPx) {
+    if (!container) return;
+    const inner = container.querySelector(".fit-text-inner") || container;
+
+    let fontSize = parseFloat(getComputedStyle(container).fontSize);
+    const min = minFontPx;
+
+    while (inner.scrollHeight > container.clientHeight + 1 && fontSize > min) {
+      fontSize -= 1;
+      container.style.fontSize = fontSize + "px";
+    }
+  }
+
+  fitBoxHeight(document.querySelector(".texto-topo"), 16);
+  fitBoxHeight(document.querySelector(".complemento"), 14);
+  fitBoxHeight(document.querySelector(".legal"), 12);
 
   const segmento = document.getElementById("segmento-bloco");
 

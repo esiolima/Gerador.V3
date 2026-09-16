@@ -121,7 +121,7 @@ body {
   padding: 18px 70px;
   border-radius: 999px;
   font-weight: 700;
-  font-size: 52px;
+  font-size: 42px;
   text-align: center;
   white-space: nowrap;
 }
@@ -133,6 +133,10 @@ body {
   align-items: center;
   flex: 1 1 auto;
   min-height: 0;
+}
+
+.fit-text-inner {
+  display: block;
 }
 
 .texto-topo {
@@ -249,7 +253,7 @@ body {
   </div>
 
   <div class="bloco-central">
-    <div class="texto-topo">{{TEXTO}}</div>
+    <div class="texto-topo"><span class="fit-text-inner">{{TEXTO}}</span></div>
 
     <div class="valor-container" id="valor-container">
       <div class="valor-texto" id="valor-texto">
@@ -259,8 +263,8 @@ body {
   </div>
 
   <div class="bloco-inferior">
-    <div class="complemento">{{COMPLEMENTO}}</div>
-    <div class="legal">{{LEGAL}}</div>
+    <div class="complemento"><span class="fit-text-inner">{{COMPLEMENTO}}</span></div>
+    <div class="legal"><span class="fit-text-inner">{{LEGAL}}</span></div>
 
     <div class="rodape">
       <div class="uf">{{URN}}</div>
@@ -276,6 +280,26 @@ body {
 
 <script>
 (function () {
+  // Encolhe a fonte de um bloco de texto ate ele caber dentro da propria
+  // altura (evita que texto mais longo que o esperado invada o elemento
+  // vizinho). Mede o wrapper interno (span), nao o container flex.
+  function fitBoxHeight(container, minFontPx) {
+    if (!container) return;
+    const inner = container.querySelector(".fit-text-inner") || container;
+
+    let fontSize = parseFloat(getComputedStyle(container).fontSize);
+    const min = minFontPx;
+
+    while (inner.scrollHeight > container.clientHeight + 1 && fontSize > min) {
+      fontSize -= 1;
+      container.style.fontSize = fontSize + "px";
+    }
+  }
+
+  fitBoxHeight(document.querySelector(".texto-topo"), 16);
+  fitBoxHeight(document.querySelector(".complemento"), 14);
+  fitBoxHeight(document.querySelector(".legal"), 12);
+
   const container = document.getElementById("valor-container");
   const el = document.getElementById("valor-texto");
 
