@@ -55,7 +55,7 @@ type JournalCardPage = {
   isContinuation: boolean;
 };
 
-type CategoryBarImages = Record<string, { left?: string; right?: string }>;
+type CategoryBarImages = Record<string, string>;
 
 const FIRST_CATEGORY_PAGE_CARD_LIMIT = 6;
 const CONTINUATION_CATEGORY_PAGE_CARD_LIMIT = 9;
@@ -469,14 +469,9 @@ export default function CardGenerator() {
     }));
   };
 
-  const getCategoryBarImage = (category: string, side: "left" | "right") =>
-    categoryBarImages[category]?.[side] || "";
+  const getCategoryBarImage = (category: string) => categoryBarImages[category] || "";
 
-  const updateCategoryBarImage = async (
-    category: string,
-    side: "left" | "right",
-    selectedFile?: File | null
-  ) => {
+  const updateCategoryBarImage = async (category: string, selectedFile?: File | null) => {
     if (!selectedFile) return;
 
     if (!selectedFile.type.startsWith("image/")) {
@@ -488,21 +483,18 @@ export default function CardGenerator() {
 
     setCategoryBarImages((current) => ({
       ...current,
-      [category]: {
-        ...(current[category] || {}),
-        [side]: dataUrl,
-      },
+      [category]: dataUrl,
     }));
   };
 
-  const chooseCategoryBarImage = (category: string, side: "left" | "right") => {
+  const chooseCategoryBarImage = (category: string) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
 
     input.onchange = (event: Event) => {
       const target = event.target as HTMLInputElement | null;
-      updateCategoryBarImage(category, side, target?.files?.[0]);
+      updateCategoryBarImage(category, target?.files?.[0]);
     };
 
     input.click();
@@ -816,7 +808,7 @@ export default function CardGenerator() {
 
             <h1 className="text-5xl font-black leading-[0.95] tracking-tight md:text-7xl">
               Sua planilha vira{" "}
-              <span className="bg-gradient-to-r from-sky-300 to-blue-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-orange-300 to-orange-600 bg-clip-text text-transparent">
                 argumento de venda
               </span>{" "}
               para divulgação.
@@ -926,8 +918,10 @@ export default function CardGenerator() {
                   <Button
                     onClick={() => setLocation("/logos")}
                     className="h-13 rounded-xl border border-white/10 bg-white/10 px-5 hover:bg-white/15"
+                    title="Gerenciar Logos"
                   >
-                    <ImageIcon className="h-5 w-5" />
+                    <ImageIcon className="h-5 w-5 mr-2" />
+                    Gerenciar Logos
                   </Button>
                 </div>
               </div>
@@ -1003,7 +997,7 @@ export default function CardGenerator() {
 
             <div className="mt-5 border-t border-white/10 pt-4 text-center">
               <p className="text-xs font-medium tracking-wide text-white/35">
-                Desenvolvido por Esio Lima • Versão 5.0
+                Desenvolvido por Esio Lima • Versão 5.1
               </p>
             </div>
           </div>
@@ -1093,8 +1087,7 @@ export default function CardGenerator() {
                     const categoryBackground = getCategoryBackground(journalPage.category);
                     const categoryBarColor = getCategoryBarColor(journalPage.category);
                     const categoryBarTextColor = getReadableTextColor(categoryBarColor);
-                    const categoryBarLeftImage = getCategoryBarImage(journalPage.category, "left");
-                    const categoryBarRightImage = getCategoryBarImage(journalPage.category, "right");
+                    const categoryBarImage = getCategoryBarImage(journalPage.category);
                     const footerTextColor = getReadableTextColor(categoryBackground);
                     const footerBorderColor =
                       footerTextColor === "#ffffff"
@@ -1137,43 +1130,26 @@ export default function CardGenerator() {
                                 style={{
                                   background: categoryBarColor,
                                   color: categoryBarTextColor,
+                                  cursor: "pointer",
                                 }}
+                                onClick={() => chooseCategoryBarImage(journalPage.category)}
+                                title={`Clique para escolher a imagem da tarja ${journalPage.category}`}
                               >
-                                <button
-                                  type="button"
-                                  className="journal-category-bar-image-slot"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    chooseCategoryBarImage(journalPage.category, "left");
-                                  }}
-                                  title={`Imagem esquerda da tarja ${journalPage.category}`}
-                                >
-                                  {categoryBarLeftImage ? (
-                                    <img src={categoryBarLeftImage} alt="Imagem esquerda da tarja" />
-                                  ) : (
-                                    <span className="journal-category-bar-image-placeholder" />
-                                  )}
-                                </button>
-
-                                <span className="journal-category-bar-title">
-                                  {journalPage.category}
-                                </span>
-
-                                <button
-                                  type="button"
-                                  className="journal-category-bar-image-slot"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    chooseCategoryBarImage(journalPage.category, "right");
-                                  }}
-                                  title={`Imagem direita da tarja ${journalPage.category}`}
-                                >
-                                  {categoryBarRightImage ? (
-                                    <img src={categoryBarRightImage} alt="Imagem direita da tarja" />
-                                  ) : (
-                                    <span className="journal-category-bar-image-placeholder" />
-                                  )}
-                                </button>
+                                {categoryBarImage ? (
+                                  <img
+                                    src={categoryBarImage}
+                                    alt={`Tarja ${journalPage.category}`}
+                                  />
+                                ) : (
+                                  <div className="journal-category-bar-placeholder">
+                                    <span className="journal-category-bar-placeholder-icon">
+                                      <Pencil className="h-6 w-6" />
+                                    </span>
+                                    <span className="journal-category-bar-title">
+                                      {journalPage.category}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </>
                           )}
@@ -1717,27 +1693,23 @@ const journalCss = `
   }
 
 .journal-category-bar{
+  position:relative;
   width:calc(100% - 72px);
   min-height:140px;
   margin:38px auto 24px auto;
   background:#0f6bc8;
   color:white;
-  display:grid;
-  grid-template-columns:140px minmax(0, 1fr) 140px;
-  align-items:center;
-  justify-content:center;
-  gap:18px;
-  text-transform:uppercase;
-  text-align:center;
-  font-size:30px;
-  line-height:1;
-  font-weight:900;
-  letter-spacing:.04em;
-  padding:0 28px;
   border-radius:999px;
   box-sizing:border-box;
   overflow:hidden;
 }
+
+  .journal-category-bar img{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
 
   .journal-category-bar-title{
     display:flex;
@@ -1747,37 +1719,30 @@ const journalCss = `
     overflow-wrap:anywhere;
   }
 
-  .journal-category-bar-image-slot{
-  width:140px;
-  height:140px;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  justify-self:center;
-  overflow:hidden;
-  cursor:pointer;
-  padding:0;
-  box-sizing:border-box;
-}
-
-  .journal-category-bar-image-slot:hover{
-    background:transparent;
-  }
-
-  .journal-category-bar-image-slot img{
+  .journal-category-bar-placeholder{
+    display:flex;
     width:100%;
     height:100%;
-    object-fit:contain;
-    display:block;
+    min-height:140px;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    text-transform:uppercase;
+    text-align:center;
+    font-size:30px;
+    line-height:1;
+    font-weight:900;
+    letter-spacing:.04em;
+    padding:0 28px;
+    box-sizing:border-box;
   }
 
-  .journal-category-bar-image-placeholder{
-    display:block;
-    width:100%;
-    height:100%;
+  .journal-category-bar-placeholder-icon{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:.85;
+    flex-shrink:0;
   }
 
   .journal-grid{
@@ -1809,7 +1774,7 @@ const journalCss = `
     border-radius:22px;
     overflow:hidden;
     background:#fff;
-    box-shadow:0 10px 20px rgba(0,0,0,.12);
+    box-shadow:none;
   }
 
   .journal-card-shadow-host{

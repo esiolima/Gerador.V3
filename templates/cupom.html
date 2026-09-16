@@ -74,8 +74,8 @@ body {
 
 /* ===== LOGO ===== */
 .logo {
-  margin-top: 45px;
-  height: 114px;
+  margin-top: 55px;
+  height: 140px;
   width: 100%;
   display: flex;
   align-items: center;
@@ -84,8 +84,8 @@ body {
 }
 
 .logo img {
-  max-height: 114px;
-  max-width: 336px;
+  max-height: 140px;
+  max-width: 280px;
   object-fit: contain;
   display: block;
 }
@@ -112,14 +112,16 @@ body {
 /* ===== TEXTO ===== */
 .condicao {
   margin-top: 0;
-  margin-bottom: 15px;
+  margin-bottom: 0;
   max-width: 550px;
   font-size: 28px;
   line-height: 1.15;
   text-align: center;
+  flex: 1 1 64px;
   min-height: 64px;
+  width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
 }
 
@@ -130,7 +132,8 @@ body {
   justify-content: center;
   width: 100%;
   max-width: 500px; /* 🔥 LIMITADOR PARA IGUALAR COM OS OUTROS */
-  margin-top: 10px;
+  margin-top: 8px;
+  flex: 0 0 auto;
 }
 
 .numero,
@@ -148,26 +151,31 @@ body {
   margin-top: 5px;
   font-size: clamp(40px, 5vw, 60px);
   font-weight: 700;
-}
-
-/* ===== FLEX ===== */
-.espaco-flexivel {
-  margin-top: 15px;
-  margin-bottom: 15px;
-  text-align: center;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  flex: 0 0 auto;
 }
 
 .complemento {
+  flex: 1.2 1 60px;
+  min-height: 60px;
+  width: 100%;
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: center;
   font-size: 22px;
   line-height: 1.2;
-  margin-bottom: 5px;
 }
 
 .legal {
+  flex: 0.8 1 40px;
+  min-height: 40px;
+  width: 100%;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  text-align: center;
   font-size: 16px;
   opacity: 0.8;
 }
@@ -230,7 +238,7 @@ body {
 
 /* ===== RODAPÉ ===== */
 .rodape {
-  margin-bottom: 35px;
+  margin-bottom: 38px;
   text-align: center;
   width: 100%;
 }
@@ -241,8 +249,9 @@ body {
 }
 
 .segmento {
-  margin-top: 8px;
+  margin-top: 12px;
   font-size: 18px;
+  font-weight: 400;
 }
 </style>
 </head>
@@ -271,10 +280,9 @@ body {
 
   <div class="desconto">DE DESCONTO</div>
 
-  <div class="espaco-flexivel">
-    <div class="complemento">{{COMPLEMENTO}}</div>
-    <div class="legal">{{LEGAL}}</div>
-  </div>
+  <div class="complemento">{{COMPLEMENTO}}</div>
+
+  <div class="legal">{{LEGAL}}</div>
 
   <div class="cupom-box">
     <div class="cupom-label">
@@ -303,12 +311,18 @@ window.addEventListener("load", function () {
 
     if (el && el.parentElement) {
       const container = el.parentElement;
+      const containerStyle = getComputedStyle(container);
+      const paddingX =
+        parseFloat(containerStyle.paddingLeft || "0") +
+        parseFloat(containerStyle.paddingRight || "0");
+      const maxWidth = container.clientWidth - paddingX;
+
       let fontSize = 72;
-      const min = 20;
+      const min = 12;
 
       el.style.fontSize = fontSize + "px";
 
-      while (el.scrollWidth > container.clientWidth && fontSize > min) {
+      while (el.scrollWidth > maxWidth && fontSize > min) {
         fontSize -= 1;
         el.style.fontSize = fontSize + "px";
       }
@@ -319,11 +333,7 @@ window.addEventListener("load", function () {
     if (segmento) {
       const texto = (segmento.textContent || "").trim();
 
-      if (
-        !texto ||
-        texto === "NEGÓCIO DE CLIENTES:" ||
-        texto.includes("{{SEGMENTO}}")
-      ) {
+      if (!texto || texto === "NEGÓCIO DE CLIENTES:") {
         segmento.style.display = "none";
       }
     }

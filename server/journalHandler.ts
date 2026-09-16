@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import puppeteer, { Browser, Page } from "puppeteer-core";
 import { PDFDocument } from "pdf-lib";
+import { stripInterFontFace } from "./fontUtils";
 
 const OUTPUT_DIR = path.resolve("output");
 const FONTS_DIR = path.resolve("fonts");
@@ -132,18 +133,18 @@ function buildPageHtml(pageHtml: string, baseUrl: string) {
   <base href="${safeBaseUrl}" />
   <style>
     @font-face {
-      font-family: 'Segoe UI';
-      src: url('/fonts/Segoe UI.ttf') format('truetype');
+      font-family: 'Inter';
+      src: url('/fonts/Inter-Regular.ttf') format('truetype');
       font-weight: 400;
     }
     @font-face {
-      font-family: 'Segoe UI';
-      src: url('/fonts/Segoe UI Bold.ttf') format('truetype');
+      font-family: 'Inter';
+      src: url('/fonts/Inter-Bold.ttf') format('truetype');
       font-weight: 700;
     }
     @font-face {
-      font-family: 'Segoe UI';
-      src: url('/fonts/segoe-ui-black.ttf') format('truetype');
+      font-family: 'Inter';
+      src: url('/fonts/Inter-Black.ttf') format('truetype');
       font-weight: 900;
     }
 
@@ -155,7 +156,7 @@ function buildPageHtml(pageHtml: string, baseUrl: string) {
       padding: 0 !important;
       overflow: hidden !important;
       background: #ffffff !important;
-      font-family: 'Segoe UI', Arial, sans-serif;
+      font-family: 'Inter', Arial, sans-serif;
       color: #111111;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
@@ -343,7 +344,7 @@ async function renderSinglePagePdf(
     const tempHtmlFile = outputPath.replace(/\.pdf$/, ".html");
     fs.writeFileSync(
       tempHtmlFile,
-      embedFontsAsBase64(buildPageHtml(journalPage.html, baseUrl)),
+      embedFontsAsBase64(stripInterFontFace(buildPageHtml(journalPage.html, baseUrl))),
       "utf-8"
     );
 

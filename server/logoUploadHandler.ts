@@ -318,6 +318,90 @@ async function handleLogoUpload(req: Request, res: Response) {
   }
 }
 
+const replaceUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 20 * 1024 * 1024,
+  },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (
+      allowedMimeTypes.includes(file.mimetype) ||
+      allowedExtensions.includes(ext)
+    ) {
+      cb(null, true);
+      return;
+    }
+
+    cb(new Error("Formato de imagem não permitido."));
+  },
+});
+
+async function handleLogoReplace(req: Request, res: Response) {
+  try {
+    const rawName = String(req.params.name || "").trim();
+
+    if (!rawName) {
+      return res.status(400).json({
+        success: false,
+        error: "Nome do arquivo não informado.",
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: "Nenhum arquivo de logo enviado.",
+      });
+    }
+
+    const fileName = sanitizeFileName(rawName);
+
+    if (fileName === "blank.png") {
+      return res.status(400).json({
+        success: false,
+        error: "O arquivo blank.png não pode ser substituído.",
+      });
+    }
+
+    const filePath = resolveLogoPath(fileName);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        error: "Logo não encontrada no servidor.",
+      });
+    }
+
+    // Grava o conteúdo do arquivo novo por cima do arquivo existente,
+    // preservando o nome (e todas as referências a ele nos templates).
+    ensureLogosDir();
+    fs.writeFileSync(filePath, req.file.buffer);
+
+    const github = await syncLogoUploadToGitHub(fileName, filePath);
+
+    return res.json({
+      success: true,
+      fileName,
+      originalName: req.file.originalname,
+      url: `/logos/${fileName}`,
+      updatedAt: Date.now(),
+      github,
+    });
+  } catch (error) {
+    console.error("[logoUploadHandler] Erro ao substituir logo:", error);
+
+    return res.status(500).json({
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao substituir logo.",
+    });
+  }
+}
+
 export function setupLogoUploadRoute(app: Express) {
   ensureLogosDir();
 
@@ -327,6 +411,14 @@ export function setupLogoUploadRoute(app: Express) {
     "/api/upload-logo",
     upload.single("logo"),
     handleLogoUpload
+  );
+
+  // Substitui uma logo já existente, mantendo o mesmo nome de arquivo
+  // (e portanto todas as referências a ela nos cards/templates).
+  app.post(
+    "/api/logos/:name/replace",
+    replaceUpload.single("logo"),
+    handleLogoReplace
   );
 
   // Compatibilidade com versões anteriores do frontend

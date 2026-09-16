@@ -4,6 +4,7 @@ FROM node:20-slim
 RUN apt-get update && apt-get install -y \
     chromium \
     ca-certificates \
+    fontconfig \
     fonts-liberation \
     libasound2 \
     libatk-bridge2.0-0 \
@@ -50,6 +51,30 @@ RUN npm install --legacy-peer-deps
 
 # Copia o restante do projeto
 COPY . .
+
+# Instala a fonte Inter como fonte de SISTEMA (nao so via @font-face no CSS).
+# O motor de PDF do Chromium (page.pdf(), usado no journalHandler e no
+# cardGenerator) sempre converte fontes carregadas via @font-face em Type3
+# (um mini-desenho vetorial por caractere), o que deixa o texto praticamente
+# impossivel de editar no Illustrator. Fontes ja instaladas no sistema, por
+# outro lado, sao embutidas corretamente como fontes de verdade (Type0/
+# TrueType). O alias abaixo faz "Inter" (nome usado em todo o CSS) apontar
+# para os arquivos instalados, cujo nome interno e "Inter 28pt".
+RUN mkdir -p /usr/share/fonts/truetype/inter \
+    && cp fonts/Inter-Regular.ttf fonts/Inter-Bold.ttf fonts/Inter-Black.ttf /usr/share/fonts/truetype/inter/ \
+    && printf '%s\n' \
+      '<?xml version="1.0"?>' \
+      '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">' \
+      '<fontconfig>' \
+      '  <match target="pattern">' \
+      '    <test name="family"><string>Inter</string></test>' \
+      '    <edit name="family" mode="prepend" binding="strong">' \
+      '      <string>Inter 28pt</string>' \
+      '    </edit>' \
+      '  </match>' \
+      '</fontconfig>' \
+      > /etc/fonts/local.conf \
+    && fc-cache -f
 
 # Variáveis de ambiente para o Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true

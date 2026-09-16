@@ -10,6 +10,7 @@ import {
   HelpCircle,
   SortAsc,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -34,6 +35,10 @@ export default function LogoManager() {
   const [isDark, setIsDark] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
+  const [replacingLogo, setReplacingLogo] = useState<string | null>(null);
+  const [cacheBust, setCacheBust] = useState<Record<string, number>>({});
 
   const { data: logosData, refetch } = trpc.logo.listLogos.useQuery();
 
@@ -130,6 +135,63 @@ export default function LogoManager() {
     handleFileSelect(e.target.files?.[0]);
   };
 
+  const handleReplaceClick = (logoName: string) => {
+    setReplaceTarget(logoName);
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const targetName = replaceTarget;
+
+    // Limpa o input já de cara para permitir escolher o mesmo arquivo de novo depois
+    if (replaceInputRef.current) {
+      replaceInputRef.current.value = "";
+    }
+
+    if (!file || !targetName) return;
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type)) {
+      setError("Apenas PNG, JPG, JPEG, WEBP e SVG são permitidos");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("O arquivo não pode exceder 5MB");
+      return;
+    }
+
+    setReplacingLogo(targetName);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("logo", file);
+
+      const response = await fetch(`/api/logos/${encodeURIComponent(targetName)}/replace`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || "Erro ao substituir logo");
+      }
+
+      setSuccess(`Logo "${targetName}" substituída com sucesso! O nome do arquivo foi mantido.`);
+      setCacheBust((current) => ({ ...current, [targetName]: Date.now() }));
+      refetch();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao substituir logo");
+    } finally {
+      setReplacingLogo(null);
+      setReplaceTarget(null);
+    }
+  };
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
@@ -178,6 +240,14 @@ export default function LogoManager() {
           />
         </div>
 
+        {/* Input escondido usado pelo botão de substituir de cada logo */}
+        <input
+          ref={replaceInputRef}
+          type="file"
+          onChange={handleReplaceInputChange}
+          className="hidden"
+        />
+
         {error && (
           <div className="bg-red-500/20 p-3 rounded">{error}</div>
         )}
@@ -190,15 +260,27 @@ export default function LogoManager() {
         <div className="grid grid-cols-3 gap-4">
           {sortedLogos.map((logo) => (
             <div key={logo.name} className="relative bg-white/5 p-4 rounded-xl">
-              <button
-                onClick={() => handleDelete(logo.name)}
-                className="absolute top-2 right-2 text-red-400"
-              >
-                <Trash2 />
-              </button>
+              <div className="absolute top-2 right-2 flex gap-1">
+                <button
+                  onClick={() => handleReplaceClick(logo.name)}
+                  disabled={replacingLogo === logo.name}
+                  className="text-blue-300 hover:text-blue-200 disabled:opacity-40"
+                  title={`Substituir "${logo.name}" (mantém o mesmo nome)`}
+                >
+                  <RefreshCw className={replacingLogo === logo.name ? "animate-spin" : ""} />
+                </button>
+
+                <button
+                  onClick={() => handleDelete(logo.name)}
+                  className="text-red-400"
+                  title={`Excluir "${logo.name}"`}
+                >
+                  <Trash2 />
+                </button>
+              </div>
 
               <img
-                src={`/logos/${logo.name}`}
+                src={`/logos/${logo.name}${cacheBust[logo.name] ? `?t=${cacheBust[logo.name]}` : ""}`}
                 className="w-full h-24 object-contain bg-white rounded"
               />
 
