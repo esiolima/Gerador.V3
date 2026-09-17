@@ -57,9 +57,6 @@ type JournalCardPage = {
 
 type CategoryBarImages = Record<string, string>;
 
-const FIRST_CATEGORY_PAGE_CARD_LIMIT = 6;
-const CONTINUATION_CATEGORY_PAGE_CARD_LIMIT = 9;
-
 function getReadableTextColor(backgroundColor: string) {
   const normalized = String(backgroundColor || "#ffffff").trim();
   const hexMatch = normalized.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
@@ -77,33 +74,12 @@ function getReadableTextColor(backgroundColor: string) {
 function buildJournalCardPages(
   groupedCards: [string, GeneratedCard[]][]
 ): JournalCardPage[] {
-  const pages: JournalCardPage[] = [];
-
-  groupedCards.forEach(([category, cards]) => {
-    let remainingCards = [...cards];
-    let pageIndexWithinCategory = 0;
-
-    while (remainingCards.length > 0) {
-      const limit =
-        pageIndexWithinCategory === 0
-          ? FIRST_CATEGORY_PAGE_CARD_LIMIT
-          : CONTINUATION_CATEGORY_PAGE_CARD_LIMIT;
-
-      const pageCards = remainingCards.slice(0, limit);
-      remainingCards = remainingCards.slice(limit);
-
-      pages.push({
-        category,
-        cards: pageCards,
-        pageIndexWithinCategory,
-        isContinuation: pageIndexWithinCategory > 0,
-      });
-
-      pageIndexWithinCategory += 1;
-    }
-  });
-
-  return pages;
+  return groupedCards.map(([category, cards]) => ({
+    category,
+    cards,
+    pageIndexWithinCategory: 0,
+    isContinuation: false,
+  }));
 }
 
 function readImageAsDataUrl(file: File): Promise<string> {
@@ -827,37 +803,56 @@ export default function CardGenerator() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#06111f] font-sans text-white">
+    <div className="relative min-h-screen overflow-x-hidden bg-[#0E1116] font-sans text-[#F4F1EA]">
       <div
         className="fixed inset-0 z-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 55% 45% at 8% 95%, rgba(37,99,235,0.34), transparent 65%), radial-gradient(ellipse 50% 60% at 95% 0%, rgba(14,165,233,0.30), transparent 62%), linear-gradient(180deg,#06111f 0%,#071827 100%)",
+            "radial-gradient(ellipse 45% 40% at 92% 0%, rgba(231,161,94,0.12), transparent 65%), radial-gradient(ellipse 40% 35% at 4% 100%, rgba(231,161,94,0.06), transparent 60%), linear-gradient(180deg,#0E1116 0%,#0B0E13 100%)",
         }}
       />
 
+      <header className="relative z-10 flex items-center justify-between border-b border-white/[0.08] px-6 py-5 lg:px-10">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-[#E7A15E] font-display text-[15px] font-semibold text-[#0E1116]">
+            JT
+          </div>
+          <span className="text-[15px] font-semibold tracking-tight">Jornal Trade</span>
+        </div>
+
+        <button
+          onClick={() => setLocation("/logos")}
+          className="flex items-center gap-2 text-sm font-medium text-[#9AA1AC] transition hover:text-[#F4F1EA]"
+        >
+          <ImageIcon className="h-4 w-4" />
+          Gerenciar Logos
+        </button>
+      </header>
+
       <main className="relative z-10 mx-auto max-w-7xl space-y-10 px-6 py-16">
         <section className="grid items-center gap-8 lg:grid-cols-[1fr_420px]">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60 backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-sky-400" />
-              Transforme Ações em Resultado
+          <div className="space-y-7">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-[#171C26] px-3.5 py-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#E7A15E]" />
+              <span className="text-[12.5px] font-semibold tracking-wide text-[#C9CDD4]">
+                FERRAMENTA INTERNA · MARTINS
+              </span>
             </div>
 
-            <h1 className="text-5xl font-black leading-[0.95] tracking-tight md:text-7xl">
+            <h1 className="font-display text-5xl font-medium leading-[1.05] tracking-tight text-[#F4F1EA] md:text-7xl">
               Sua planilha vira{" "}
-              <span className="bg-gradient-to-r from-orange-300 to-orange-600 bg-clip-text text-transparent">
+              <em className="not-italic italic text-[#E7A15E]">
                 argumento de venda
-              </span>{" "}
+              </em>{" "}
               para divulgação.
             </h1>
 
-            <p className="max-w-2xl text-lg text-white/55">
+            <p className="max-w-2xl text-lg text-[#ABB1BB]">
               Gere um jornal de ofertas profissional de trade, pensado para a força de vendas B2B com categorias organizadas, ofertas claras e layout pronto para negociação.
             </p>
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-xl">
+          <div className="rounded-[20px] border border-white/[0.09] bg-[#12161F] p-6 shadow-2xl">
             {!result && (
               <div className="space-y-5">
                 <div
@@ -875,15 +870,15 @@ export default function CardGenerator() {
                     setIsDragging(false);
                     handleFileSelect(event.dataTransfer.files[0]);
                   }}
-                  className={`group cursor-pointer rounded-[1.5rem] border-2 border-dashed p-10 text-center transition ${
+                  className={`group cursor-pointer rounded-2xl border-[1.5px] border-dashed p-10 text-center transition ${
                     isDragging
-                      ? "border-sky-400 bg-sky-400/10"
-                      : "border-white/15 bg-black/20 hover:border-sky-400/60"
+                      ? "border-[#E7A15E] bg-[#E7A15E]/10"
+                      : "border-[#E7A15E]/35 bg-[#E7A15E]/[0.04] hover:border-[#E7A15E]/60"
                   }`}
                 >
-                  <Upload className="mx-auto mb-4 h-12 w-12 text-sky-400" />
-                  <p className="text-xl font-bold">Arraste ou selecione o Excel</p>
-                  <p className="mt-2 text-sm text-white/40">
+                  <Upload className="mx-auto mb-4 h-12 w-12 text-[#E7A15E]" />
+                  <p className="text-xl font-bold text-[#F4F1EA]">Arraste ou selecione o Excel</p>
+                  <p className="mt-2 text-sm text-[#7E8590]">
                     A planilha será validada antes da geração dos cards.
                   </p>
 
@@ -897,8 +892,8 @@ export default function CardGenerator() {
                 </div>
 
                 {file && (
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/80">
-                    <CheckCircle2 className="mr-2 inline h-4 w-4 text-sky-400" />
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-[#C9CDD4]">
+                    <CheckCircle2 className="mr-2 inline h-4 w-4 text-[#E7A15E]" />
                     {file.name}
                   </div>
                 )}
@@ -948,14 +943,14 @@ export default function CardGenerator() {
                   <Button
                     disabled={!file || isProcessing}
                     onClick={handleUpload}
-                    className="h-13 flex-1 rounded-xl bg-blue-600 text-base font-bold hover:bg-blue-700 disabled:opacity-40"
+                    className="h-13 flex-1 rounded-xl bg-[#E7A15E] text-base font-bold text-[#1A1206] hover:bg-[#F0B679] disabled:opacity-40"
                   >
                     {isProcessing ? "Processando..." : "Processar planilha"}
                   </Button>
 
                   <Button
                     onClick={() => setLocation("/logos")}
-                    className="h-13 rounded-xl border border-white/10 bg-white/10 px-5 hover:bg-white/15"
+                    className="h-13 rounded-xl border border-white/10 bg-white/[0.06] px-5 text-[#F4F1EA] hover:bg-white/10"
                     title="Gerenciar Logos"
                   >
                     <ImageIcon className="h-5 w-5 mr-2" />
@@ -969,12 +964,12 @@ export default function CardGenerator() {
               <div className="space-y-8 py-8 text-center">
                 <div className="relative mx-auto h-16 w-16">
                   <div className="absolute inset-0 rounded-full border border-white/10" />
-                  <div className="absolute inset-2 rounded-full border border-sky-400/40 animate-pulse" />
-                  <Hourglass className="relative z-10 mx-auto h-10 w-10 text-sky-400 animate-spin" />
+                  <div className="absolute inset-2 rounded-full border border-[#E7A15E]/40 animate-pulse" />
+                  <Hourglass className="relative z-10 mx-auto h-10 w-10 text-[#E7A15E] animate-spin" />
                 </div>
 
                 <div>
-                  <h2 className="text-2xl font-black tracking-tight">
+                  <h2 className="font-display text-2xl font-medium tracking-tight text-[#F4F1EA]">
                     Processando cards
                   </h2>
                 </div>
@@ -982,12 +977,12 @@ export default function CardGenerator() {
                 <div className="space-y-3">
                   <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500 transition-all duration-500 ease-out"
+                      className="h-full rounded-full bg-[#E7A15E] transition-all duration-500 ease-out"
                       style={{ width: `${progress.percentage}%` }}
                     />
                   </div>
 
-                  <div className="flex justify-between px-1 text-xs text-white/35">
+                  <div className="flex justify-between px-1 text-xs text-[#7E8590]">
                     <span>{progress.processed}</span>
                     <span>{progress.total || "..."}</span>
                   </div>
@@ -997,11 +992,11 @@ export default function CardGenerator() {
 
             {result && (
               <div className="space-y-5 py-3 text-center">
-                <CheckCircle2 className="mx-auto h-14 w-14 text-teal-300" />
+                <CheckCircle2 className="mx-auto h-14 w-14 text-[#7FC9B4]" />
 
                 <div>
-                  <h2 className="text-2xl font-black">Cards prontos</h2>
-                  <p className="text-white/45">
+                  <h2 className="font-display text-2xl font-medium text-[#F4F1EA]">Cards prontos</h2>
+                  <p className="text-[#9AA1AC]">
                     {result.processedRows} cards processados com sucesso
                   </p>
                 </div>
@@ -1012,7 +1007,7 @@ export default function CardGenerator() {
                       result.zipPath
                     )}`)
                   }
-                  className="h-13 w-full rounded-xl bg-teal-600 text-base font-bold hover:bg-teal-700"
+                  className="h-13 w-full rounded-xl bg-[#3E8E77] text-base font-bold text-white hover:bg-[#48a186]"
                 >
                   <Download className="mr-2 h-5 w-5" />
                   Baixar Cards (ZIP)
@@ -1020,13 +1015,13 @@ export default function CardGenerator() {
 
                 <Button
                   onClick={() => setShowJournal(true)}
-                  className="h-13 w-full rounded-xl bg-blue-600 text-base font-bold hover:bg-blue-700"
+                  className="h-13 w-full rounded-xl bg-[#E7A15E] text-base font-bold text-[#1A1206] hover:bg-[#F0B679]"
                 >
                   <Newspaper className="mr-2 h-5 w-5" />
                   Diagramar Jornal
                 </Button>
 
-                <Button variant="ghost" onClick={reset} className="text-white/45 hover:text-white">
+                <Button variant="ghost" onClick={reset} className="text-[#7E8590] hover:text-[#F4F1EA]">
                   <RefreshCcw className="mr-2 h-4 w-4" />
                   Novo processamento
                 </Button>
@@ -1034,7 +1029,7 @@ export default function CardGenerator() {
             )}
 
             <div className="mt-5 border-t border-white/10 pt-4 text-center">
-              <p className="text-xs font-medium tracking-wide text-white/35">
+              <p className="text-xs font-medium tracking-wide text-[#5E6570]">
                 Desenvolvido por Esio Lima • Versão 5.1
               </p>
             </div>
@@ -1788,12 +1783,11 @@ const journalCss = `
     width:1080px;
     height:auto;
     min-height:0;
-    max-height:1920px;
     padding-bottom:40px;
     background:#ffffff;
     box-shadow:0 20px 50px rgba(0,0,0,.08);
     margin-bottom:40px;
-    overflow:hidden;
+    overflow:visible;
   }
 
   .journal-header{
