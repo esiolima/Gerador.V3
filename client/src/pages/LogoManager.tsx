@@ -11,6 +11,8 @@ import {
   SortAsc,
   Clock,
   RefreshCw,
+  Search,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -29,6 +31,7 @@ export default function LogoManager() {
 
   const [logos, setLogos] = useState<Logo[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("name");
+  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,14 +54,19 @@ export default function LogoManager() {
   const sortedLogos = useMemo(() => {
     const filtered = logos.filter((logo) => logo.name !== "blank.png");
 
-    return [...filtered].sort((a, b) => {
+    const query = searchQuery.trim().toLowerCase();
+    const searched = query
+      ? filtered.filter((logo) => logo.name.toLowerCase().includes(query))
+      : filtered;
+
+    return [...searched].sort((a, b) => {
       if (sortBy === "name") {
         return a.name.localeCompare(b.name);
       } else {
         return (b.mtime || 0) - (a.mtime || 0);
       }
     });
-  }, [logos, sortBy]);
+  }, [logos, sortBy, searchQuery]);
 
   const handleDelete = async (logoName: string) => {
     const confirmDelete = window.confirm(
@@ -256,38 +264,73 @@ export default function LogoManager() {
           <div className="bg-green-500/20 p-3 rounded">{success}</div>
         )}
 
-        {/* Logos */}
-        <div className="grid grid-cols-3 gap-4">
-          {sortedLogos.map((logo) => (
-            <div key={logo.name} className="relative bg-white/5 p-4 rounded-xl">
-              <div className="absolute top-2 right-2 flex gap-1">
-                <button
-                  onClick={() => handleReplaceClick(logo.name)}
-                  disabled={replacingLogo === logo.name}
-                  className="text-blue-300 hover:text-blue-200 disabled:opacity-40"
-                  title={`Substituir "${logo.name}" (mantém o mesmo nome)`}
-                >
-                  <RefreshCw className={replacingLogo === logo.name ? "animate-spin" : ""} />
-                </button>
-
-                <button
-                  onClick={() => handleDelete(logo.name)}
-                  className="text-red-400"
-                  title={`Excluir "${logo.name}"`}
-                >
-                  <Trash2 />
-                </button>
-              </div>
-
-              <img
-                src={`/logos/${logo.name}${cacheBust[logo.name] ? `?t=${cacheBust[logo.name]}` : ""}`}
-                className="w-full h-24 object-contain bg-white rounded"
-              />
-
-              <p className="text-xs mt-2">{logo.name}</p>
-            </div>
-          ))}
+        {/* Busca */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar logo pelo nome..."
+            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-10 pr-10 text-sm outline-none placeholder:text-white/40 focus:border-white/30"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+              title="Limpar busca"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
+
+        {searchQuery && (
+          <p className="text-xs text-white/50">
+            {sortedLogos.length}{" "}
+            {sortedLogos.length === 1 ? "logo encontrada" : "logos encontradas"} para "{searchQuery}"
+          </p>
+        )}
+
+        {/* Logos */}
+        {searchQuery && sortedLogos.length === 0 ? (
+          <div className="text-center py-10 text-white/50">
+            <Search className="mx-auto mb-3 h-8 w-8 opacity-40" />
+            Nenhuma logo encontrada para "{searchQuery}"
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {sortedLogos.map((logo) => (
+              <div key={logo.name} className="relative bg-white/5 p-4 rounded-xl">
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <button
+                    onClick={() => handleReplaceClick(logo.name)}
+                    disabled={replacingLogo === logo.name}
+                    className="text-blue-300 hover:text-blue-200 disabled:opacity-40"
+                    title={`Substituir "${logo.name}" (mantém o mesmo nome)`}
+                  >
+                    <RefreshCw className={replacingLogo === logo.name ? "animate-spin" : ""} />
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(logo.name)}
+                    className="text-red-400"
+                    title={`Excluir "${logo.name}"`}
+                  >
+                    <Trash2 />
+                  </button>
+                </div>
+
+                <img
+                  src={`/logos/${logo.name}${cacheBust[logo.name] ? `?t=${cacheBust[logo.name]}` : ""}`}
+                  className="w-full h-24 object-contain bg-white rounded"
+                />
+
+                <p className="text-xs mt-2">{logo.name}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
