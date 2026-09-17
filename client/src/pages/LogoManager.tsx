@@ -76,7 +76,7 @@ export default function LogoManager() {
     if (!confirmDelete) return;
 
     try {
-      const response = await fetch(`/api/logos/${logoName}`, {
+      const response = await fetch(`/api/logos/${encodeURIComponent(logoName)}`, {
         method: "DELETE",
       });
 
@@ -88,6 +88,7 @@ export default function LogoManager() {
       }
 
       setSuccess(`Logo "${logoName}" excluída com sucesso!`);
+      setLogos((current) => current.filter((logo) => logo.name !== logoName));
       refetch();
     } catch {
       setError("Erro ao excluir logo");
