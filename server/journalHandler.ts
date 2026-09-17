@@ -176,6 +176,10 @@ function buildPageHtml(pageHtml: string, baseUrl: string) {
       display: none !important;
     }
 
+    .journal-category-bar-placeholder-icon {
+      display: none !important;
+    }
+
     .journal-page,
     .journal-cover-page,
     .journal-ad-page {
@@ -199,8 +203,9 @@ function buildPageHtml(pageHtml: string, baseUrl: string) {
       max-width: ${JOURNAL_WIDTH}px !important;
       height: auto !important;
       min-height: 0 !important;
+      max-height: none !important;
       margin: 0 !important;
-      overflow: hidden !important;
+      overflow: visible !important;
       box-shadow: none !important;
       break-after: auto !important;
       page-break-after: auto !important;
