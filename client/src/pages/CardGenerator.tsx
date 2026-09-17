@@ -363,6 +363,7 @@ const PAGE_BACKGROUND_STORAGE_KEY = "jornal_page_background";
 const CATEGORY_BACKGROUNDS_STORAGE_KEY = "jornal_category_backgrounds";
 const CATEGORY_BAR_COLORS_STORAGE_KEY = "jornal_category_bar_colors";
 const CATEGORY_BAR_IMAGES_STORAGE_KEY = "jornal_category_bar_images";
+const AD_PAGE_COUNT_STORAGE_KEY = "jornal_ad_page_count";
 const DEFAULT_JOURNAL_BACKGROUND = "#ffffff";
 const DEFAULT_CATEGORY_BAR_COLOR = "#0f6bc8";
 
@@ -382,7 +383,15 @@ export default function CardGenerator() {
 
   const [coverImage, setCoverImage] = useState<string>("/assets/capa.png");
   const [headerImage, setHeaderImage] = useState<string>("/assets/header.png");
-  const [adImage, setAdImage] = useState<string>("/assets/anuncio.png");
+  const [adImages, setAdImages] = useState<string[]>(["/assets/anuncio.png"]);
+  const [adPageCount, setAdPageCount] = useState<number>(() => {
+    if (typeof window === "undefined") return 1;
+
+    const saved = window.localStorage.getItem(AD_PAGE_COUNT_STORAGE_KEY);
+    const parsed = saved ? parseInt(saved, 10) : NaN;
+
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 1;
+  });
   const [categoryBackgrounds, setCategoryBackgrounds] = useState<Record<string, string>>(() => {
     if (typeof window === "undefined") return { __default: DEFAULT_JOURNAL_BACKGROUND };
 
@@ -440,6 +449,7 @@ export default function CardGenerator() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const headerInputRef = useRef<HTMLInputElement>(null);
   const adInputRef = useRef<HTMLInputElement>(null);
+  const [adImageTargetIndex, setAdImageTargetIndex] = useState<number | null>(null);
 
   const [, setLocation] = useLocation();
 
@@ -576,6 +586,10 @@ export default function CardGenerator() {
     );
   }, [categoryBarImages]);
 
+  useEffect(() => {
+    window.localStorage.setItem(AD_PAGE_COUNT_STORAGE_KEY, String(adPageCount));
+  }, [adPageCount]);
+
   const handleFileSelect = (selectedFile: File | null | undefined) => {
     if (!selectedFile) return;
 
@@ -641,7 +655,7 @@ export default function CardGenerator() {
   };
 
   const changeImage = async (
-    kind: "cover" | "header" | "ad",
+    kind: "cover" | "header",
     selectedFile?: File | null
   ) => {
     if (!selectedFile) return;
@@ -655,7 +669,31 @@ export default function CardGenerator() {
 
     if (kind === "cover") setCoverImage(dataUrl);
     if (kind === "header") setHeaderImage(dataUrl);
-    if (kind === "ad") setAdImage(dataUrl);
+  };
+
+  const changeAdImage = async (index: number, selectedFile?: File | null) => {
+    if (!selectedFile) return;
+
+    if (!selectedFile.type.startsWith("image/")) {
+      window.alert("Envie apenas arquivos de imagem.");
+      return;
+    }
+
+    const dataUrl = await readImageAsDataUrl(selectedFile);
+
+    setAdImages((current) => {
+      const next = [...current];
+      next[index] = dataUrl;
+      return next;
+    });
+  };
+
+  const incrementAdPageCount = () => {
+    setAdPageCount((current) => Math.min(current + 1, 10));
+  };
+
+  const decrementAdPageCount = () => {
+    setAdPageCount((current) => Math.max(current - 1, 0));
   };
 
   const generateJournalPdf = async () => {
@@ -1008,7 +1046,7 @@ export default function CardGenerator() {
             <div className="journal-preview-viewport">
               <div className="journal-editor-controls" aria-label="Controles do jornal diagramado">
                 <p className="journal-editor-help">
-                  Clique na capa, cabeçalho, anúncio ou logo dos cards para substituir as imagens. Cada categoria será gerada como uma página independente.
+                  Clique na capa, no cabeçalho, em uma página de anúncio ou no logo de um card para trocar a imagem. Se preferir não usar uma imagem na tarja de uma categoria, ela mostra a cor "Tarja" escolhida abaixo — a cor "Fundo" define o fundo da página daquela categoria. Cada categoria vira uma página independente no PDF final.
                 </p>
 
                 <div className="journal-editor-category-list">
@@ -1055,6 +1093,34 @@ export default function CardGenerator() {
                   <FileDown className="mr-2 h-5 w-5" />
                   {isGeneratingJournal ? "Gerando PDF..." : "Gerar em PDF"}
                 </Button>
+
+                <div className="journal-editor-ad-count-row" aria-label="Quantidade de páginas de anúncio">
+                  <span className="journal-editor-ad-count-label">Páginas de Anúncios</span>
+
+                  <div className="journal-editor-ad-count-stepper">
+                    <button
+                      type="button"
+                      onClick={decrementAdPageCount}
+                      disabled={adPageCount <= 0}
+                      className="journal-editor-ad-count-button"
+                      aria-label="Diminuir quantidade de páginas de anúncio"
+                    >
+                      −
+                    </button>
+
+                    <span className="journal-editor-ad-count-value">{adPageCount}</span>
+
+                    <button
+                      type="button"
+                      onClick={incrementAdPageCount}
+                      disabled={adPageCount >= 10}
+                      className="journal-editor-ad-count-button"
+                      aria-label="Aumentar quantidade de páginas de anúncio"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div
@@ -1187,22 +1253,32 @@ export default function CardGenerator() {
                     );
                   })}
 
-                  <div className="journal-page-label">
-                    Página {journalCardPages.length + 2} — Anúncio
-                  </div>
+                  {Array.from({ length: adPageCount }).map((_, adIndex) => (
+                    <div key={`ad-page-${adIndex}`}>
+                      <div className="journal-page-label">
+                        Página {journalCardPages.length + 2 + adIndex} — Anúncio {adPageCount > 1 ? adIndex + 1 : ""}
+                      </div>
 
-                  <div
-                    className="journal-page journal-ad-page"
-                    data-journal-page="ad"
-                    data-journal-title="Anúncio"
-                    onClick={() => adInputRef.current?.click()}
-                  >
-                    <img src={adImage} alt="Anúncio do jornal" />
-                    <div className="journal-placeholder">
-                      <Pencil className="h-8 w-8" />
-                      Clique para escolher anúncio
+                      <div
+                        className="journal-page journal-ad-page"
+                        data-journal-page="ad"
+                        data-journal-title="Anúncio"
+                        onClick={() => {
+                          setAdImageTargetIndex(adIndex);
+                          adInputRef.current?.click();
+                        }}
+                      >
+                        <img
+                          src={adImages[adIndex] || "/assets/anuncio.png"}
+                          alt={`Anúncio ${adIndex + 1} do jornal`}
+                        />
+                        <div className="journal-placeholder">
+                          <Pencil className="h-8 w-8" />
+                          Clique para escolher anúncio
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -1261,7 +1337,12 @@ export default function CardGenerator() {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(event) => changeImage("ad", event.target.files?.[0])}
+              onChange={(event) => {
+                if (adImageTargetIndex !== null) {
+                  changeAdImage(adImageTargetIndex, event.target.files?.[0]);
+                }
+                event.target.value = "";
+              }}
             />
           </section>
         )}
@@ -1464,6 +1545,59 @@ const journalCss = `
     line-height:1.45;
     font-weight:700;
     color:#334155;
+  }
+
+  .journal-editor-ad-count-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    border-radius:12px;
+    background:#f8fafc;
+    border:1px solid rgba(15,23,42,.08);
+  }
+
+  .journal-editor-ad-count-label{
+    font-size:12.5px;
+    font-weight:800;
+    color:#0f172a;
+  }
+
+  .journal-editor-ad-count-stepper{
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    gap:10px;
+  }
+
+  .journal-editor-ad-count-button{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;
+    height:28px;
+    border-radius:8px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#0f172a;
+    color:#ffffff;
+    font-size:16px;
+    font-weight:700;
+    line-height:1;
+    cursor:pointer;
+  }
+
+  .journal-editor-ad-count-button:disabled{
+    opacity:.35;
+    cursor:not-allowed;
+  }
+
+  .journal-editor-ad-count-value{
+    min-width:20px;
+    text-align:center;
+    font-size:14px;
+    font-weight:800;
+    color:#0f172a;
   }
 
   .journal-editor-category-list{
@@ -1695,7 +1829,7 @@ const journalCss = `
 .journal-category-bar{
   position:relative;
   width:calc(100% - 72px);
-  min-height:140px;
+  height:140px;
   margin:38px auto 24px auto;
   background:#0f6bc8;
   color:white;
@@ -1708,7 +1842,7 @@ const journalCss = `
     display:block;
     width:100%;
     height:100%;
-    object-fit:cover;
+    object-fit:contain;
   }
 
   .journal-category-bar-title{
