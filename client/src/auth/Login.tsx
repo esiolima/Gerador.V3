@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./useAuth";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
@@ -128,9 +129,9 @@ export default function Login() {
         </div>
       </div>
 
-      {showRequest && (
+      {showRequest && createPortal(
         <div
-          className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
           onClick={() => setShowRequest(false)}
         >
           <div
@@ -215,7 +216,8 @@ export default function Login() {
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
