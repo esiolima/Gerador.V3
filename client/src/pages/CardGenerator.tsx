@@ -1189,9 +1189,6 @@ export default function CardGenerator() {
                                   />
                                 ) : (
                                   <div className="journal-category-bar-placeholder">
-                                    <span className="journal-category-bar-placeholder-icon">
-                                      <Pencil className="h-6 w-6" />
-                                    </span>
                                     <span className="journal-category-bar-title">
                                       {journalPage.category}
                                     </span>
@@ -1865,7 +1862,7 @@ const journalCss = `
     gap:20px;
     justify-content:center;
     align-content:flex-start;
-    padding:20px 36px 36px 36px;
+    padding:20px 36px 20px 36px;
     box-sizing:border-box;
   }
 
@@ -1906,11 +1903,11 @@ const journalCss = `
     left:auto;
     right:auto;
     bottom:auto;
-    margin:12px 54px 0 54px;
+    margin:0 54px 0 54px;
     padding:18px 24px 0 24px;
     border-top:2px solid rgba(0,0,0,.16);
     text-align:center;
-    font-size:16px;
+    font-size:8px;
     line-height:1.32;
     font-weight:500;
     outline:2px dashed transparent;
