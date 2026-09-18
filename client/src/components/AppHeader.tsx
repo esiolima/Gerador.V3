@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import { Image as ImageIcon, ShieldCheck, LogOut, KeyRound, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/auth/useAuth";
@@ -133,9 +134,9 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-30 flex items-center justify-center bg-black/70 p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
       onClick={onClose}
     >
       <div
@@ -207,6 +208,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
