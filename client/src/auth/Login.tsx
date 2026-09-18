@@ -1,72 +1,126 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./useAuth";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function Login() {
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
   const [showRequest, setShowRequest] = useState(false);
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [requestSent, setRequestSent] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
+
+  const handleLogin = async () => {
+    setLoginError(null);
+    setIsSubmitting(true);
+
+    try {
+      await login(email, password);
+    } catch (err) {
+      setLoginError(err instanceof Error ? err.message : "Erro ao entrar.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSendRequest = async () => {
+    setRequestError(null);
+    setIsSendingRequest(true);
+
+    try {
+      const response = await fetch("/api/auth/request-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Erro ao enviar solicitação.");
+      }
+
+      setRequestSent(true);
+    } catch (err) {
+      setRequestError(err instanceof Error ? err.message : "Erro ao enviar solicitação.");
+    } finally {
+      setIsSendingRequest(false);
+    }
+  };
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen text-white overflow-hidden">
-      
-      {/* 🔥 FUNDO */}
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#06111f]" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0E1116] font-sans text-[#F4F1EA]">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 45% 40% at 50% 0%, rgba(231,161,94,0.12), transparent 65%), linear-gradient(180deg,#0E1116 0%,#0B0E13 100%)",
+        }}
+      />
 
-        <div className="absolute w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] top-[-100px] left-[-100px]" />
+      <div className="relative z-10 flex flex-col items-center gap-8 px-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[11px] bg-[#E7A15E] font-display text-[19px] font-semibold text-[#0E1116]">
+            JT
+          </div>
+          <h1 className="text-center font-display text-3xl font-medium tracking-tight text-[#F4F1EA] md:text-4xl">
+            Jornal Trade
+          </h1>
+        </div>
 
-        <div className="absolute w-[500px] h-[500px] bg-cyan-400/20 rounded-full blur-[120px] bottom-[-100px] right-[-100px]" />
+        <div className="w-full max-w-md rounded-[20px] border border-white/[0.09] bg-[#12161F] p-7 shadow-2xl">
+          <h2 className="mb-5 text-[15px] font-semibold text-[#F4F1EA]">Entrar</h2>
 
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/40 to-black/70" />
-      </div>
+          <div className="space-y-3">
+            <input
+              type="email"
+              placeholder="E-mail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm outline-none placeholder:text-white/35 focus:border-[#E7A15E]/50"
+            />
 
-      {/* CONTEÚDO */}
-      <div className="flex flex-col items-center gap-6 px-4">
+            <input
+              type="password"
+              placeholder="Senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm outline-none placeholder:text-white/35 focus:border-[#E7A15E]/50"
+            />
+          </div>
 
-        {/* 🧠 TÍTULO */}
-        <h1 className="text-center text-3xl md:text-4xl font-black tracking-tight leading-tight">
-          <span className="bg-gradient-to-r from-sky-300 to-blue-500 bg-clip-text text-transparent">
-            Gerador de Ações de <br />
-            Trade Marketing
-          </span>
-        </h1>
-
-        {/* 📦 BOX LOGIN */}
-        <div className="p-6 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-md shadow-2xl">
-          
-          <h2 className="text-xl font-bold mb-4 text-white/90 text-right">
-            Login
-          </h2>
-
-          <input
-            placeholder="Email"
-            className="w-full p-2 mb-2 bg-black/30 rounded outline-none focus:ring-2 focus:ring-blue-500"
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <input
-            type="password"
-            placeholder="Senha"
-            className="w-full p-2 mb-4 bg-black/30 rounded outline-none focus:ring-2 focus:ring-blue-500"
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          {loginError && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-400/25 bg-red-500/10 px-3 py-2.5 text-[13px] text-red-100/90">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              {loginError}
+            </div>
+          )}
 
           <Button
-            onClick={() => login(email, password)}
-            className="w-full"
+            onClick={handleLogin}
+            disabled={isSubmitting || !email || !password}
+            className="mt-4 h-11 w-full rounded-xl bg-[#E7A15E] text-sm font-bold text-[#1A1206] hover:bg-[#F0B679] disabled:opacity-40"
           >
-            Entrar
+            {isSubmitting ? "Entrando..." : "Entrar"}
           </Button>
 
-          {/* 🔗 SOLICITAR ACESSO */}
           <div className="mt-4 text-center">
             <button
-              onClick={() => setShowRequest(true)}
-              className="text-blue-400 hover:underline text-sm"
+              onClick={() => {
+                setShowRequest(true);
+                setRequestSent(false);
+                setRequestError(null);
+              }}
+              className="text-[13px] text-[#E7A15E] hover:underline"
             >
               Solicitar acesso
             </button>
@@ -74,66 +128,92 @@ export default function Login() {
         </div>
       </div>
 
-      {/* 🧾 MODAL SOLICITAR ACESSO */}
       {showRequest && (
         <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center"
+          className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4"
           onClick={() => setShowRequest(false)}
         >
           <div
-            className="bg-[#06111f] p-6 rounded-xl w-full max-w-md space-y-3 border border-white/10"
+            className="w-full max-w-md space-y-3 rounded-[20px] border border-white/[0.09] bg-[#12161F] p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setShowRequest(false)}
-              className="text-sm text-gray-400 hover:text-white"
+              className="text-[13px] text-[#7E8590] hover:text-[#F4F1EA]"
             >
               ← Voltar
             </button>
 
-            <h2 className="text-lg font-semibold">Solicitar acesso</h2>
+            {requestSent ? (
+              <div className="flex flex-col items-center gap-3 py-6 text-center">
+                <CheckCircle2 className="h-10 w-10 text-[#7FC9B4]" />
+                <h2 className="font-display text-lg font-medium text-[#F4F1EA]">
+                  Solicitação enviada
+                </h2>
+                <p className="text-sm text-[#9AA1AC]">
+                  Um administrador vai avaliar seu pedido de acesso em breve.
+                </p>
+                <Button
+                  onClick={() => setShowRequest(false)}
+                  className="mt-2 rounded-xl bg-white/10 text-sm font-semibold text-[#F4F1EA] hover:bg-white/15"
+                >
+                  Fechar
+                </Button>
+              </div>
+            ) : (
+              <>
+                <h2 className="font-display text-lg font-medium text-[#F4F1EA]">
+                  Solicitar acesso
+                </h2>
 
-            {["nome", "e-mail", "empresa", "cargo", "telefone"].map((f) => (
-              <input
-                key={f}
-                placeholder={f}
-                className="w-full p-2 bg-black/30 rounded"
-                onChange={(e) =>
-                  setForm({ ...form, [f]: e.target.value })
-                }
-              />
-            ))}
+                {[
+                  { key: "name", placeholder: "Nome" },
+                  { key: "email", placeholder: "E-mail" },
+                  { key: "company", placeholder: "Empresa" },
+                  { key: "role", placeholder: "Cargo" },
+                  { key: "phone", placeholder: "Telefone" },
+                ].map((f) => (
+                  <input
+                    key={f.key}
+                    placeholder={f.placeholder}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm outline-none placeholder:text-white/35 focus:border-[#E7A15E]/50"
+                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                  />
+                ))}
 
-            <textarea
-              placeholder="mensagem"
-              className="w-full p-2 bg-black/30 rounded"
-              onChange={(e) =>
-                setForm({ ...form, message: e.target.value })
-              }
-            />
+                <textarea
+                  placeholder="Mensagem (opcional)"
+                  rows={3}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm outline-none placeholder:text-white/35 focus:border-[#E7A15E]/50"
+                  onChange={(e) => setForm({ ...form, message: e.target.value })}
+                />
 
-            <div className="flex gap-2 pt-2">
-              <Button
-                variant="secondary"
-                onClick={() => setShowRequest(false)}
-              >
-                Cancelar
-              </Button>
+                {requestError && (
+                  <div className="flex items-start gap-2 rounded-xl border border-red-400/25 bg-red-500/10 px-3 py-2.5 text-[13px] text-red-100/90">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    {requestError}
+                  </div>
+                )}
 
-              <Button
-                onClick={async () => {
-                  await fetch("/api/auth/request-access", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(form),
-                  });
-                  alert("Enviado!");
-                  setShowRequest(false);
-                }}
-              >
-                Enviar
-              </Button>
-            </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowRequest(false)}
+                    className="flex-1 rounded-xl bg-white/10 text-[#F4F1EA] hover:bg-white/15"
+                  >
+                    Cancelar
+                  </Button>
+
+                  <Button
+                    onClick={handleSendRequest}
+                    disabled={isSendingRequest || !form.name || !form.email}
+                    className="flex-1 rounded-xl bg-[#E7A15E] font-bold text-[#1A1206] hover:bg-[#F0B679] disabled:opacity-40"
+                  >
+                    {isSendingRequest ? "Enviando..." : "Enviar"}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

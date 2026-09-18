@@ -5,6 +5,7 @@ import {
   getCookieOptions,
   getUserById,
   loginWithEmailPassword,
+  requestAccess,
   verifyAuthToken,
 } from "./authService";
 import nodemailer from "nodemailer";
@@ -80,6 +81,24 @@ export async function setupAuthRoutes(app: Express) {
         return res.status(400).json({
           success: false,
           error: "Nome e email obrigatórios",
+        });
+      }
+
+      // Cria o pedido pendente de verdade -- fica visivel no painel de admin
+      // para aprovacao, independente do envio de e-mail dar certo ou nao.
+      try {
+        await requestAccess({
+          name,
+          email,
+          company,
+          jobTitle: role,
+          phone,
+          message,
+        });
+      } catch (createError: any) {
+        return res.status(400).json({
+          success: false,
+          error: createError?.message || "Não foi possível registrar o pedido de acesso.",
         });
       }
 

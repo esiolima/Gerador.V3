@@ -3,20 +3,13 @@ import {
   Upload,
   AlertCircle,
   CheckCircle2,
-  ArrowLeft,
-  Sun,
-  Moon,
   Trash2,
-  HelpCircle,
-  SortAsc,
-  Clock,
   RefreshCw,
   Search,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
+import AppHeader from "@/components/AppHeader";
 
 interface Logo {
   name: string;
@@ -27,15 +20,12 @@ interface Logo {
 type SortOption = "name" | "date";
 
 export default function LogoManager() {
-  const [, navigate] = useLocation();
-
   const [logos, setLogos] = useState<Logo[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("name");
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isDark, setIsDark] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
@@ -220,15 +210,24 @@ export default function LogoManager() {
   };
 
   return (
-    <div className="min-h-screen bg-[#06111f] text-white p-6">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="relative min-h-screen overflow-x-hidden bg-[#0E1116] font-sans text-[#F4F1EA]">
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 45% 40% at 92% 0%, rgba(231,161,94,0.12), transparent 65%), linear-gradient(180deg,#0E1116 0%,#0B0E13 100%)",
+        }}
+      />
 
-        <Button onClick={() => navigate("/")}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Voltar
-        </Button>
+      <AppHeader active="logos" />
 
-        <h1 className="text-3xl font-black">Gerenciador de Logos</h1>
+      <main className="relative z-10 mx-auto max-w-5xl space-y-8 px-6 py-14">
+        <div>
+          <h1 className="font-display text-3xl font-medium tracking-tight">Gerenciador de Logos</h1>
+          <p className="mt-1.5 text-sm text-[#9AA1AC]">
+            Envie novas logos, substitua as existentes ou remova as que não usa mais.
+          </p>
+        </div>
 
         {/* Upload */}
         <div
@@ -236,10 +235,14 @@ export default function LogoManager() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className="border-2 border-dashed border-white/20 p-10 text-center rounded-xl cursor-pointer"
+          className={`cursor-pointer rounded-2xl border-[1.5px] border-dashed p-10 text-center transition ${
+            isDragging
+              ? "border-[#E7A15E] bg-[#E7A15E]/10"
+              : "border-[#E7A15E]/35 bg-[#E7A15E]/[0.04] hover:border-[#E7A15E]/60"
+          }`}
         >
-          <Upload className="mx-auto mb-4" />
-          <p>Arraste ou clique para enviar logo</p>
+          <Upload className="mx-auto mb-3 h-9 w-9 text-[#E7A15E]" />
+          <p className="text-[15px] font-semibold text-[#F4F1EA]">Arraste ou clique para enviar logo</p>
 
           <input
             ref={fileInputRef}
@@ -258,27 +261,33 @@ export default function LogoManager() {
         />
 
         {error && (
-          <div className="bg-red-500/20 p-3 rounded">{error}</div>
+          <div className="flex items-start gap-2 rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-100/90">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            {error}
+          </div>
         )}
 
         {success && (
-          <div className="bg-green-500/20 p-3 rounded">{success}</div>
+          <div className="flex items-start gap-2 rounded-xl border border-[#7FC9B4]/25 bg-[#7FC9B4]/10 px-4 py-3 text-sm text-[#D7F0E8]">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            {success}
+          </div>
         )}
 
         {/* Busca */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7E8590]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar logo pelo nome..."
-            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-10 pr-10 text-sm outline-none placeholder:text-white/40 focus:border-white/30"
+            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-10 pr-10 text-sm outline-none placeholder:text-[#7E8590] focus:border-[#E7A15E]/50"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7E8590] hover:text-[#F4F1EA]"
               title="Limpar busca"
             >
               <X className="h-4 w-4" />
@@ -287,7 +296,7 @@ export default function LogoManager() {
         </div>
 
         {searchQuery && (
-          <p className="text-xs text-white/50">
+          <p className="text-xs text-[#7E8590]">
             {sortedLogos.length}{" "}
             {sortedLogos.length === 1 ? "logo encontrada" : "logos encontradas"} para "{searchQuery}"
           </p>
@@ -295,44 +304,47 @@ export default function LogoManager() {
 
         {/* Logos */}
         {searchQuery && sortedLogos.length === 0 ? (
-          <div className="text-center py-10 text-white/50">
+          <div className="py-10 text-center text-[#7E8590]">
             <Search className="mx-auto mb-3 h-8 w-8 opacity-40" />
             Nenhuma logo encontrada para "{searchQuery}"
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-4">
             {sortedLogos.map((logo) => (
-              <div key={logo.name} className="relative bg-white/5 p-4 rounded-xl">
-                <div className="absolute top-2 right-2 flex gap-1">
+              <div
+                key={logo.name}
+                className="relative rounded-[14px] border border-white/[0.08] bg-[#12161F] p-4"
+              >
+                <div className="absolute right-2 top-2 flex gap-1">
                   <button
                     onClick={() => handleReplaceClick(logo.name)}
                     disabled={replacingLogo === logo.name}
-                    className="text-blue-300 hover:text-blue-200 disabled:opacity-40"
+                    className="text-[#7FA8D9] hover:text-[#9BBEE5] disabled:opacity-40"
                     title={`Substituir "${logo.name}" (mantém o mesmo nome)`}
                   >
-                    <RefreshCw className={replacingLogo === logo.name ? "animate-spin" : ""} />
+                    <RefreshCw className={replacingLogo === logo.name ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
                   </button>
 
                   <button
                     onClick={() => handleDelete(logo.name)}
-                    className="text-red-400"
+                    className="text-red-400/80 hover:text-red-400"
                     title={`Excluir "${logo.name}"`}
                   >
-                    <Trash2 />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
 
                 <img
                   src={`/logos/${logo.name}${cacheBust[logo.name] ? `?t=${cacheBust[logo.name]}` : ""}`}
-                  className="w-full h-24 object-contain bg-white rounded"
+                  className="h-24 w-full rounded-lg bg-white object-contain"
                 />
 
-                <p className="text-xs mt-2">{logo.name}</p>
+                <p className="mt-2 truncate text-xs text-[#9AA1AC]">{logo.name}</p>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

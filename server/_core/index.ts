@@ -14,6 +14,7 @@ import { setupUploadRoute } from "../uploadHandler";
 import { setupLogoUploadRoute } from "../logoUploadHandler";
 import { setupJournalRoute } from "../journalHandler";
 import { setupAuthRoutes } from "../auth/authRoutes";
+import { setupAdminRoutes } from "../auth/adminRoutes";
 import { authMiddleware } from "../auth/authMiddleware";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -54,6 +55,9 @@ async function startServer() {
 
   // 🔐 ROTAS DE AUTH (LOGIN, ME, REQUEST-ACCESS)
   await setupAuthRoutes(app);
+
+  // 🔐 PAINEL DE ADMIN (usuarios pendentes/aprovados)
+  setupAdminRoutes(app);
 
   registerOAuthRoutes(app);
 

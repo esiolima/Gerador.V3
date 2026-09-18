@@ -3,6 +3,7 @@ import { io, Socket } from "socket.io-client";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import AppHeader from "@/components/AppHeader";
 import {
   Upload,
   CheckCircle2,
@@ -812,22 +813,7 @@ export default function CardGenerator() {
         }}
       />
 
-      <header className="relative z-10 flex items-center justify-between border-b border-white/[0.08] px-6 py-5 lg:px-10">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-[#E7A15E] font-display text-[15px] font-semibold text-[#0E1116]">
-            JT
-          </div>
-          <span className="text-[15px] font-semibold tracking-tight">Jornal Trade</span>
-        </div>
-
-        <button
-          onClick={() => setLocation("/logos")}
-          className="flex items-center gap-2 text-sm font-medium text-[#9AA1AC] transition hover:text-[#F4F1EA]"
-        >
-          <ImageIcon className="h-4 w-4" />
-          Gerenciar Logos
-        </button>
-      </header>
+      <AppHeader active="gerador" />
 
       <main className="relative z-10 mx-auto max-w-7xl space-y-10 px-6 py-16">
         <section className="grid items-center gap-8 lg:grid-cols-[1fr_420px]">
