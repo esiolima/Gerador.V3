@@ -168,25 +168,32 @@ export default function Login() {
                 </h2>
 
                 {[
-                  { key: "name", placeholder: "Nome" },
-                  { key: "email", placeholder: "E-mail" },
-                  { key: "company", placeholder: "Empresa" },
-                  { key: "role", placeholder: "Cargo" },
-                  { key: "phone", placeholder: "Telefone" },
+                  { key: "name", placeholder: "Nome", type: "text" },
+                  { key: "email", placeholder: "E-mail", type: "email" },
+                  { key: "company", placeholder: "Empresa", type: "text" },
+                  { key: "role", placeholder: "Cargo", type: "text" },
+                  { key: "phone", placeholder: "Telefone", type: "tel" },
                 ].map((f) => (
                   <input
                     key={f.key}
+                    name={f.key}
+                    type={f.type}
+                    autoComplete="off"
                     placeholder={f.placeholder}
+                    value={form[f.key] || ""}
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm outline-none placeholder:text-white/35 focus:border-[#E7A15E]/50"
-                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                    onChange={(e) => setForm((current) => ({ ...current, [f.key]: e.target.value }))}
                   />
                 ))}
 
                 <textarea
+                  name="message"
+                  autoComplete="off"
                   placeholder="Mensagem (opcional)"
                   rows={3}
+                  value={form.message || ""}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm outline-none placeholder:text-white/35 focus:border-[#E7A15E]/50"
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
+                  onChange={(e) => setForm((current) => ({ ...current, message: e.target.value }))}
                 />
 
                 {requestError && (
