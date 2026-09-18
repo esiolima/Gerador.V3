@@ -7,6 +7,7 @@ import {
   listAllUsersForAdmin,
   rejectUser,
   resetUserPassword,
+  setUserRole,
 } from "./authService";
 
 export function setupAdminRoutes(app: Express) {
@@ -26,7 +27,23 @@ export function setupAdminRoutes(app: Express) {
     async (req: AuthenticatedRequest, res: Response) => {
       try {
         const password = String(req.body?.password || "");
-        const user = await approveUser(req.params.id, password);
+        const role = req.body?.role === "admin" ? "admin" : undefined;
+        const user = await approveUser(req.params.id, password, role);
+        res.json({ success: true, user });
+      } catch (error: any) {
+        res.status(400).json({ success: false, error: error?.message });
+      }
+    }
+  );
+
+  // Promove ou rebaixa um usuario ja aprovado (admin <-> usuario)
+  app.post(
+    "/api/admin/users/:id/role",
+    requireAdmin,
+    (req: AuthenticatedRequest, res: Response) => {
+      try {
+        const role = req.body?.role === "admin" ? "admin" : "user";
+        const user = setUserRole(req.params.id, role);
         res.json({ success: true, user });
       } catch (error: any) {
         res.status(400).json({ success: false, error: error?.message });
