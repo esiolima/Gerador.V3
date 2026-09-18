@@ -17,6 +17,7 @@ import {
   Pencil,
   AlertCircle,
   Palette,
+  X,
 } from "lucide-react";
 
 type ProgressData = {
@@ -485,6 +486,14 @@ export default function CardGenerator() {
     };
 
     input.click();
+  };
+
+  const removeCategoryBarImage = (category: string) => {
+    setCategoryBarImages((current) => {
+      const next = { ...current };
+      delete next[category];
+      return next;
+    });
   };
 
   const updateJournalZoom = (nextZoom: number) => {
@@ -1183,10 +1192,23 @@ export default function CardGenerator() {
                                 title={`Clique para escolher a imagem da tarja ${journalPage.category}`}
                               >
                                 {categoryBarImage ? (
-                                  <img
-                                    src={categoryBarImage}
-                                    alt={`Tarja ${journalPage.category}`}
-                                  />
+                                  <>
+                                    <img
+                                      src={categoryBarImage}
+                                      alt={`Tarja ${journalPage.category}`}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        removeCategoryBarImage(journalPage.category);
+                                      }}
+                                      title="Remover imagem da tarja"
+                                      className="journal-category-bar-remove"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  </>
                                 ) : (
                                   <div className="journal-category-bar-placeholder">
                                     <span className="journal-category-bar-title">
@@ -1814,6 +1836,27 @@ const journalCss = `
   box-sizing:border-box;
   overflow:hidden;
 }
+
+  .journal-category-bar-remove{
+    position:absolute;
+    top:14px;
+    right:28px;
+    z-index:2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;
+    height:28px;
+    border-radius:999px;
+    border:none;
+    background:rgba(0,0,0,.45);
+    color:#fff;
+    cursor:pointer;
+  }
+
+  .journal-category-bar-remove:hover{
+    background:rgba(0,0,0,.65);
+  }
 
   .journal-category-bar img{
     display:block;
