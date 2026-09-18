@@ -203,6 +203,36 @@ export async function createUser(input: {
   return toPublicUser(user);
 }
 
+// Troca a propria senha -- exige a senha atual, diferente do reset feito pelo admin
+export async function changeOwnPassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+) {
+  const users = readUsers();
+  const index = users.findIndex((user) => user.id === userId);
+
+  if (index < 0) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  const passwordOk = await bcrypt.compare(
+    String(currentPassword || ""),
+    users[index].passwordHash
+  );
+
+  if (!passwordOk) {
+    throw new Error("Senha atual incorreta.");
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error("A nova senha precisa ter pelo menos 6 caracteres.");
+  }
+
+  users[index].passwordHash = await bcrypt.hash(newPassword, 12);
+  writeUsers(users);
+}
+
 export function deactivateUser(id: string) {
   const users = readUsers();
   const index = users.findIndex((user) => user.id === id);
@@ -284,7 +314,7 @@ export async function requestAccess(input: {
 }
 
 // 🔐 ADMIN: aprova um pedido pendente, definindo a senha de acesso
-export async function approveUser(id: string, password: string) {
+export async function approveUser(id: string, password: string, role?: AuthRole) {
   const users = readUsers();
   const index = users.findIndex((user) => user.id === id);
 
@@ -299,7 +329,25 @@ export async function approveUser(id: string, password: string) {
   users[index].passwordHash = await bcrypt.hash(password, 12);
   users[index].active = true;
   users[index].status = "approved";
+  if (role) {
+    users[index].role = role;
+  }
 
+  writeUsers(users);
+
+  return toAdminUser(users[index]);
+}
+
+// 🔐 ADMIN: promove ou rebaixa um usuário já aprovado
+export function setUserRole(id: string, role: AuthRole) {
+  const users = readUsers();
+  const index = users.findIndex((user) => user.id === id);
+
+  if (index < 0) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  users[index].role = role;
   writeUsers(users);
 
   return toAdminUser(users[index]);

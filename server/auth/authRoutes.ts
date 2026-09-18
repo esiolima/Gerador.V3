@@ -7,6 +7,7 @@ import {
   loginWithEmailPassword,
   requestAccess,
   verifyAuthToken,
+  changeOwnPassword,
 } from "./authService";
 import nodemailer from "nodemailer";
 
@@ -61,6 +62,29 @@ export async function setupAuthRoutes(app: Express) {
       res.json({ success: true, user });
     } catch {
       res.status(401).json({ success: false });
+    }
+  });
+
+  // 🔑 TROCAR A PRÓPRIA SENHA (exige a senha atual)
+  app.post("/api/auth/change-password", async (req: Request, res: Response) => {
+    let userId: string;
+
+    try {
+      const token = getTokenFromCookie(req);
+      userId = verifyAuthToken(token).id;
+    } catch {
+      return res.status(401).json({ success: false, error: "Sessão inválida." });
+    }
+
+    try {
+      const currentPassword = String(req.body?.currentPassword || "");
+      const newPassword = String(req.body?.newPassword || "");
+
+      await changeOwnPassword(userId, currentPassword, newPassword);
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error?.message || "Erro ao trocar senha." });
     }
   });
 
