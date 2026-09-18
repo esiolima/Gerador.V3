@@ -180,6 +180,10 @@ function buildPageHtml(pageHtml: string, baseUrl: string) {
       display: none !important;
     }
 
+    .journal-category-bar-remove {
+      display: none !important;
+    }
+
     .journal-page,
     .journal-cover-page,
     .journal-ad-page {
