@@ -66,6 +66,22 @@ function resolveLogoPath(fileName: string): string {
   return resolvedPath;
 }
 
+// Para operações sobre um arquivo JÁ EXISTENTE (excluir/substituir): usa o nome
+// exatamente como foi informado, só bloqueando path traversal. sanitizeFileName
+// força minúsculas e remove caracteres, o que quebra a busca em arquivos reais
+// com maiúsculas no nome (ex: "3M.png" vira "3m.png" e some o "não encontrado").
+function resolveExistingLogoPath(fileName: string): string {
+  const baseName = path.basename(String(fileName || "").trim());
+  const resolvedPath = path.resolve(LOGOS_DIR, baseName);
+  const resolvedLogosDir = path.resolve(LOGOS_DIR);
+
+  if (!baseName || !resolvedPath.startsWith(resolvedLogosDir)) {
+    throw new Error("Nome de arquivo inválido.");
+  }
+
+  return resolvedPath;
+}
+
 function getGitHubConfig(): GitHubConfig | null {
   const token = process.env.GITHUB_TOKEN || "";
   const owner = process.env.GITHUB_OWNER || "";
@@ -356,16 +372,15 @@ async function handleLogoReplace(req: Request, res: Response) {
       });
     }
 
-    const fileName = sanitizeFileName(rawName);
-
-    if (fileName === "blank.png") {
+    if (rawName.toLowerCase() === "blank.png") {
       return res.status(400).json({
         success: false,
         error: "O arquivo blank.png não pode ser substituído.",
       });
     }
 
-    const filePath = resolveLogoPath(fileName);
+    const filePath = resolveExistingLogoPath(rawName);
+    const fileName = path.basename(filePath);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({
@@ -485,16 +500,15 @@ export function setupLogoUploadRoute(app: Express) {
         });
       }
 
-      const fileName = sanitizeFileName(rawName);
-
-      if (fileName === "blank.png") {
+      if (rawName.toLowerCase() === "blank.png") {
         return res.status(400).json({
           success: false,
           error: "O arquivo blank.png não pode ser excluído.",
         });
       }
 
-      const filePath = resolveLogoPath(fileName);
+      const filePath = resolveExistingLogoPath(rawName);
+      const fileName = path.basename(filePath);
 
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({
