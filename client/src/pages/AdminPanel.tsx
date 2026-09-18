@@ -30,6 +30,7 @@ function generatePassword() {
 
 export default function AdminPanel() {
   const [users, setUsers] = useState<AdminUser[] | null>(null);
+  const [pendingRoles, setPendingRoles] = useState<Record<string, "user" | "admin">>({});
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [lastPassword, setLastPassword] = useState<{ id: string; password: string } | null>(null);
@@ -56,6 +57,7 @@ export default function AdminPanel() {
 
   const handleApprove = async (id: string) => {
     const password = generatePassword();
+    const role = pendingRoles[id] || "user";
     setBusyId(id);
     setError(null);
 
@@ -64,7 +66,7 @@ export default function AdminPanel() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, role }),
       });
 
       const data = await response.json();
@@ -77,6 +79,37 @@ export default function AdminPanel() {
       await loadUsers();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao aprovar usuário.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleToggleRole = async (id: string, currentRole: "user" | "admin") => {
+    const nextRole = currentRole === "admin" ? "user" : "admin";
+    const verb = nextRole === "admin" ? "Tornar" : "Remover privilégio de";
+
+    if (!window.confirm(`${verb} administrador para este usuário?`)) return;
+
+    setBusyId(id);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/admin/users/${id}/role`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: nextRole }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Erro ao alterar papel do usuário.");
+      }
+
+      await loadUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao alterar papel do usuário.");
     } finally {
       setBusyId(null);
     }
@@ -251,7 +284,20 @@ export default function AdminPanel() {
                       )}
                     </div>
 
-                    <div className="flex shrink-0 gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
+                      <select
+                        value={pendingRoles[u.id] || "user"}
+                        onChange={(e) =>
+                          setPendingRoles((current) => ({
+                            ...current,
+                            [u.id]: e.target.value as "user" | "admin",
+                          }))
+                        }
+                        className="h-9 rounded-lg border border-white/10 bg-[#0F131B] px-2 text-[13px] text-[#C9CDD4] outline-none"
+                      >
+                        <option value="user">Usuário</option>
+                        <option value="admin">Admin</option>
+                      </select>
                       <Button
                         disabled={busyId === u.id}
                         onClick={() => handleApprove(u.id)}
@@ -317,6 +363,14 @@ export default function AdminPanel() {
                             className="text-[#9AA1AC] hover:text-[#E7A15E] disabled:opacity-40"
                           >
                             <KeyRound className="h-4 w-4" />
+                          </button>
+                          <button
+                            disabled={busyId === u.id}
+                            onClick={() => handleToggleRole(u.id, u.role)}
+                            title={u.role === "admin" ? "Remover admin" : "Tornar admin"}
+                            className="text-[#9AA1AC] hover:text-[#E7A15E] disabled:opacity-40"
+                          >
+                            <ShieldCheck className="h-4 w-4" />
                           </button>
                           <button
                             disabled={busyId === u.id}
