@@ -604,7 +604,21 @@ export class CardGenerator extends EventEmitter {
     });
 
     const workbook = xlsx.readFile(excelFilePath);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    // Usa a aba ATIVA (a que estava selecionada/visivel quando o arquivo
+    // foi salvo no Excel), nao simplesmente a primeira da lista. Planilhas
+    // que acumulam um historico de abas (uma por semana, por exemplo) quase
+    // sempre tem a mais antiga na posicao 0 -- e costuma ficar oculta,
+    // enquanto a aba realmente em uso e a ativa. Sem isso, o sistema lia
+    // sempre dados antigos/de outra estrutura (ex: sem coluna "categoria"),
+    // mesmo com a planilha certa selecionada no Excel.
+    const activeSheetIndex = workbook.Workbook?.WBView?.[0]?.activeTab;
+    const sheetName =
+      typeof activeSheetIndex === "number" && workbook.SheetNames[activeSheetIndex]
+        ? workbook.SheetNames[activeSheetIndex]
+        : workbook.SheetNames[0];
+
+    const sheet = workbook.Sheets[sheetName];
 
     const rawRows: any[] = xlsx.utils.sheet_to_json(sheet, {
       defval: "",
