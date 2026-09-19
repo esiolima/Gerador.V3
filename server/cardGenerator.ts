@@ -380,18 +380,80 @@ export class CardGenerator extends EventEmitter {
         document.getElementById("valor-container") || document.querySelector(".valor-container"),
         { max: 520, min: 22, nowrap: false, lineHeight: "0.9", limit: 600 }
       );
-
-      fitText(
-        document.getElementById("cupom-text"),
-        document.querySelector(".cupom-codigo"),
-        { max: 120, min: 18, nowrap: true, lineHeight: "1", limit: 160 }
-      );
     } catch(e) {
       console.error("[__fitCards] erro:", e);
     }
   }
 
   window.__fitCards = run;
+
+  // Reajusta TODOS os blocos de texto elastico (condicao, texto-topo,
+  // complemento, legal etc. -- qualquer coisa envolvida em
+  // .fit-text-inner) apos a confirmacao de que as fontes customizadas
+  // JA carregaram. O script embutido em cada template roda no evento
+  // "load" da propria pagina, que pode disparar ANTES da fonte Inter
+  // terminar de carregar -- a medicao original usa uma fonte substituta
+  // temporaria, podendo decidir errado (nao encolher o suficiente). Essa
+  // segunda passada corrige isso, sempre com a fonte definitiva.
+  function refitTextBoxes(){
+    try {
+      var inners = document.querySelectorAll(".fit-text-inner");
+
+      for (var i = 0; i < inners.length; i++) {
+        var inner = inners[i];
+        var container = inner.parentElement;
+        if (!container) continue;
+
+        var fontSize = parseFloat(getComputedStyle(container).fontSize);
+        var min = 10;
+        var guard = 0;
+
+        while (inner.scrollHeight > container.clientHeight + 1 && fontSize > min && guard < 200) {
+          fontSize -= 1;
+          container.style.fontSize = fontSize + "px";
+          guard++;
+        }
+      }
+    } catch(e) {
+      console.error("[__refitTextBoxes] erro:", e);
+    }
+  }
+
+  window.__refitTextBoxes = refitTextBoxes;
+
+  // Mesmo raciocinio do refitTextBoxes, mas para o texto do cupom
+  // (#cupom-text dentro de .cupom-codigo) -- ele nao usa .fit-text-inner,
+  // entao precisa da sua propria segunda passada. Reproduz o calculo do
+  // proprio cupom.html (descontando o padding da caixa azul, garantindo
+  // a margem minima), so que chamada depois que as fontes estao
+  // confirmadamente prontas.
+  function refitCupomText(){
+    try {
+      var el = document.getElementById("cupom-text");
+      if (!el || !el.parentElement) return;
+
+      var container = el.parentElement;
+      var containerStyle = getComputedStyle(container);
+      var paddingX =
+        parseFloat(containerStyle.paddingLeft || "0") +
+        parseFloat(containerStyle.paddingRight || "0");
+      var maxWidth = container.clientWidth - paddingX;
+
+      var fontSize = 72;
+      var min = 12;
+
+      el.style.fontSize = fontSize + "px";
+
+      while (el.scrollWidth > maxWidth && fontSize > min) {
+        fontSize -= 1;
+        el.style.fontSize = fontSize + "px";
+      }
+    } catch(e) {
+      console.error("[__refitCupomText] erro:", e);
+    }
+  }
+
+  window.__refitCupomText = refitCupomText;
 
   if(document.fonts && document.fonts.ready) {
     document.fonts.ready.then(run).catch(function(){ run(); });
@@ -459,6 +521,12 @@ export class CardGenerator extends EventEmitter {
 
         // @ts-ignore
         if (window.__fitCards) window.__fitCards();
+
+        // @ts-ignore
+        if (window.__refitTextBoxes) window.__refitTextBoxes();
+
+        // @ts-ignore
+        if (window.__refitCupomText) window.__refitCupomText();
 
         await new Promise((resolve) => setTimeout(resolve, 250));
       } catch (error) {
