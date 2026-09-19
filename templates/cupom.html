@@ -244,6 +244,14 @@ body {
   text-align: center;
 }
 
+/* ESPAÇADOR ESPELHADO (mesma largura do rótulo CUPOM à esquerda) --
+   sem isso, o texto fica centralizado apenas no espaço APOS o rotulo,
+   o que visualmente parece puxado pra direita em relacao a caixa toda */
+.cupom-spacer {
+  width: 80px;
+  flex-shrink: 0;
+}
+
 /* TEXTO DO CUPOM */
 #cupom-text {
   display: block;
@@ -315,6 +323,8 @@ body {
     <div class="cupom-codigo">
       <span id="cupom-text">{{CUPOM}}</span>
     </div>
+
+    <div class="cupom-spacer"></div>
   </div>
 
   <div class="rodape">
