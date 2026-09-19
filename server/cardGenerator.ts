@@ -606,9 +606,23 @@ export class CardGenerator extends EventEmitter {
     const workbook = xlsx.readFile(excelFilePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    const rows: any[] = xlsx.utils.sheet_to_json(sheet, {
+    const rawRows: any[] = xlsx.utils.sheet_to_json(sheet, {
       defval: "",
       raw: false,
+    });
+
+    // Normaliza as chaves de cada linha (minusculo + sem espaco nas pontas)
+    // -- o codigo em todo o resto do arquivo acessa os campos pelo nome
+    // exato em minusculo (row.categoria, row.tipo, row.logo etc.), entao
+    // um cabecalho digitado como "Categoria" ou "CATEGORIA" na planilha
+    // faria esses campos virem undefined silenciosamente (ex: toda linha
+    // caindo em "sem-categoria" mesmo com a coluna preenchida).
+    const rows: any[] = rawRows.map((rawRow) => {
+      const normalized: any = {};
+      for (const key of Object.keys(rawRow)) {
+        normalized[key.toLowerCase().trim()] = rawRow[key];
+      }
+      return normalized;
     });
 
     this.emitProgress({
